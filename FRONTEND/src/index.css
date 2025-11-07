@@ -1,0 +1,109 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
+All colors MUST be HSL.
+*/
+
+@layer base {
+  :root {
+    /* Cosmic Dark Base */
+    --background: 215 25% 6%;
+    --foreground: 195 100% 95%;
+
+    /* Glass Card Effects */
+    --card: 215 20% 10%;
+    --card-foreground: 195 100% 95%;
+    --glass-bg: 0 0% 100% / 0.05;
+    --glass-border: 0 0% 100% / 0.1;
+
+    /* Popover */
+    --popover: 215 25% 8%;
+    --popover-foreground: 195 100% 95%;
+
+    /* Primary - Bright Cyan */
+    --primary: 195 100% 50%;
+    --primary-foreground: 215 25% 6%;
+    --primary-glow: 195 100% 70%;
+
+    /* Secondary - Deep Blue */
+    --secondary: 215 20% 15%;
+    --secondary-foreground: 195 100% 95%;
+
+    /* Muted - Subtle backgrounds */
+    --muted: 215 15% 12%;
+    --muted-foreground: 210 15% 70%;
+
+    /* Accent - Purple Blue */
+    --accent: 232 80% 65%;
+    --accent-foreground: 195 100% 95%;
+
+    /* Success - Green */
+    --success: 142 76% 58%;
+    --success-foreground: 215 25% 6%;
+
+    /* Destructive */
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 195 100% 95%;
+
+    /* Borders & Inputs */
+    --border: 215 15% 20%;
+    --input: 215 15% 18%;
+    --ring: 195 100% 50%;
+
+    /* Radius */
+    --radius: 0.75rem;
+
+    /* Gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(195 100% 50%), hsl(232 80% 65%));
+    --gradient-glow: radial-gradient(circle at 50% 0%, hsl(195 100% 50% / 0.15), transparent 50%);
+    
+    /* Animations */
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-bounce: all 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    background-image: 
+      radial-gradient(circle at 20% 20%, hsl(195 100% 50% / 0.08) 0%, transparent 50%),
+      radial-gradient(circle at 80% 80%, hsl(232 80% 65% / 0.08) 0%, transparent 50%);
+    background-attachment: fixed;
+  }
+}
+
+@layer utilities {
+  .glass-card {
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+  
+  .glass-card-hover {
+    transition: var(--transition-smooth);
+  }
+  
+  .glass-card-hover:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.2);
+    transform: translateY(-2px);
+  }
+  
+  .gradient-text {
+    background: linear-gradient(135deg, hsl(195 100% 50%), hsl(232 80% 65%));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  
+  .glow-effect {
+    box-shadow: 0 0 30px hsl(195 100% 50% / 0.3);
+  }
+}
