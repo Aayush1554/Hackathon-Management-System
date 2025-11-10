@@ -6,22 +6,30 @@ import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { ArrowLeft, Award } from "lucide-react";
 import { toast } from "sonner";
+import { authAPI } from "@/lib/api";
+import { useAuth } from "@/contexts/AuthContext";
 
 const MentorLogin = () => {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const { login } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     
-    setTimeout(() => {
+    try {
+      await login(email, password, 'mentor');
       toast.success("Login successful!");
-      navigate("/mentor/dashboard");
+      navigate("/mentor/dashboard", { replace: true });
+    } catch (error: any) {
+      console.error('Login error:', error);
+      toast.error(error.message || error.response?.data?.message || "Invalid credentials");
+    } finally {
       setIsLoading(false);
-    }, 1000);
+    }
   };
 
   return (

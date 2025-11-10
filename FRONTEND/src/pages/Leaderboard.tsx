@@ -1,23 +1,18 @@
-import { useState } from "react";
+// Global (legacy) leaderboard across all hackathons.
+// Keeping original component, but you now have per-hackathon boards at /hackathon/:id/leaderboard
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import { Trophy, Medal, Award, Filter } from "lucide-react";
+import { Trophy, Medal, Award } from "lucide-react";
 
 const Leaderboard = () => {
-  const [selectedHackathon, setSelectedHackathon] = useState("all");
-  
   const teams = [
+    // Aggregated sample - you may replace with API aggregated scoring logic later.
     { rank: 1, name: "Code Warriors", hackathon: "AI Innovation Challenge", score: 98, leader: "John Doe" },
-    { rank: 2, name: "Tech Titans", hackathon: "AI Innovation Challenge", score: 95, leader: "Jane Smith" },
-    { rank: 3, name: "Innovation Squad", hackathon: "AI Innovation Challenge", score: 92, leader: "Bob Johnson" },
-    { rank: 4, name: "Digital Pioneers", hackathon: "Web3 Builder Summit", score: 90, leader: "Alice Williams" },
-    { rank: 5, name: "Future Builders", hackathon: "Web3 Builder Summit", score: 88, leader: "Charlie Brown" },
-    { rank: 6, name: "Code Ninjas", hackathon: "Green Tech Solutions", score: 86, leader: "Diana Prince" },
-    { rank: 7, name: "Tech Wizards", hackathon: "Green Tech Solutions", score: 84, leader: "Ethan Hunt" },
-    { rank: 8, name: "Byte Force", hackathon: "AI Innovation Challenge", score: 82, leader: "Fiona Green" }
+    { rank: 2, name: "Digital Pioneers", hackathon: "Web3 Builder Summit", score: 90, leader: "Alice Williams" },
+    { rank: 3, name: "Code Ninjas", hackathon: "Green Tech Solutions", score: 86, leader: "Diana Prince" },
+    { rank: 4, name: "Tech Titans", hackathon: "AI Innovation Challenge", score: 95, leader: "Jane Smith" },
   ];
 
   const getRankIcon = (rank: number) => {
@@ -57,12 +52,7 @@ const Leaderboard = () => {
             <p className="text-muted-foreground">Top performing teams across all hackathons</p>
           </div>
           
-          <div className="flex justify-center mb-8">
-            <Button variant="outline" className="glass-card">
-              <Filter className="mr-2 w-4 h-4" />
-              Filter by Hackathon
-            </Button>
-          </div>
+          {/* This global leaderboard is optional now; navigate to a specific hackathon to see detailed rankings. */}
           
           {/* Top 3 Podium */}
           <div className="grid md:grid-cols-3 gap-6 mb-12 max-w-4xl mx-auto">

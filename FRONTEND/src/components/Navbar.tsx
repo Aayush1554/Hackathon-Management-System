@@ -1,8 +1,29 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Zap } from "lucide-react";
+import { Zap, LogOut, User } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "sonner";
 
 const Navbar = () => {
+  const { user, logout, isAdmin, isMentor, isTeamMember } = useAuth();
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    logout();
+    toast.success("Logged out successfully");
+    navigate("/");
+  };
+
+  const handleProfileClick = () => {
+    if (isAdmin) {
+      navigate("/admin/dashboard");
+    } else if (isMentor) {
+      navigate("/mentor/dashboard");
+    } else if (isTeamMember) {
+      navigate("/team/dashboard");
+    }
+  };
+
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 glass-card border-b">
       <div className="container mx-auto px-4 h-16 flex items-center justify-between">
@@ -17,18 +38,42 @@ const Navbar = () => {
           <Link to="/hackathons" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
             Hackathons
           </Link>
-          <Link to="/leaderboard" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-            Leaderboard
+          <Link to="/about" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+            About Us
           </Link>
         </div>
         
         <div className="flex items-center gap-3">
-          <Button variant="ghost" size="sm" asChild>
-            <Link to="/login/team">Login</Link>
-          </Button>
-          <Button size="sm" className="bg-primary hover:bg-primary-glow text-primary-foreground" asChild>
-            <Link to="/register/team">Get Started</Link>
-          </Button>
+          {user ? (
+            <>
+              <button
+                onClick={handleProfileClick}
+                className="hidden md:flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                title="Go to Dashboard"
+              >
+                <User className="w-4 h-4" />
+                <span>{user.full_name}</span>
+              </button>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={handleLogout}
+                className="gap-2"
+              >
+                <LogOut className="w-4 h-4" />
+                Logout
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button variant="ghost" size="sm" asChild>
+                <Link to="/login/team">Login</Link>
+              </Button>
+              <Button size="sm" className="bg-primary hover:bg-primary-glow text-primary-foreground" asChild>
+                <Link to="/login/team">Get Started</Link>
+              </Button>
+            </>
+          )}
         </div>
       </div>
     </nav>

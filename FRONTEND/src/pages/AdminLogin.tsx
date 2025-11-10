@@ -6,22 +6,37 @@ import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { ArrowLeft, Trophy } from "lucide-react";
 import { toast } from "sonner";
+import { useAuth } from "@/contexts/AuthContext";
+
+const AUTHORIZED_ADMIN_EMAIL = "admin@hackplatform.com";
 
 const AdminLogin = () => {
   const navigate = useNavigate();
+  const { login } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Check if email is authorized
+    if (email !== AUTHORIZED_ADMIN_EMAIL) {
+      toast.error("Access Denied - You are not authorized to access the admin panel.");
+      return;
+    }
+    
     setIsLoading(true);
     
-    setTimeout(() => {
+    try {
+      await login(email, password, "admin");
       toast.success("Login successful!");
-      navigate("/admin/dashboard");
+      navigate("/admin/dashboard", { replace: true });
+    } catch (error: any) {
+      toast.error(error.message || "Invalid credentials");
+    } finally {
       setIsLoading(false);
-    }, 1000);
+    }
   };
 
   return (

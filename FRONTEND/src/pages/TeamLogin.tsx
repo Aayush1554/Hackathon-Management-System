@@ -6,9 +6,11 @@ import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { ArrowLeft, Users } from "lucide-react";
 import { toast } from "sonner";
+import { useAuth } from "@/contexts/AuthContext";
 
 const TeamLogin = () => {
   const navigate = useNavigate();
+  const { login } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -17,12 +19,15 @@ const TeamLogin = () => {
     e.preventDefault();
     setIsLoading(true);
     
-    // Simulate login
-    setTimeout(() => {
+    try {
+      await login(email, password, "team_member");
       toast.success("Login successful!");
-      navigate("/team/dashboard");
+      navigate("/team/dashboard", { replace: true });
+    } catch (error: any) {
+      toast.error(error.message || "Invalid credentials");
+    } finally {
       setIsLoading(false);
-    }, 1000);
+    }
   };
 
   return (
