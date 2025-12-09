@@ -235,6 +235,25 @@ const MentorDashboard = () => {
     }
   };
 
+  const handleEditMessage = async (communicationId: number, newText: string) => {
+    try {
+      await mentorAPI.editMessage(communicationId, newText);
+      await refreshCommunications();
+    } catch (error: any) {
+      throw error; // Let ChatInterface handle the error display
+    }
+  };
+
+  const handleMarkAsRead = async () => {
+    if (!selectedTeam || !user) return;
+    try {
+      await mentorAPI.markMessagesAsRead(selectedTeam.team_id, user.user_id);
+    } catch (error: any) {
+      console.error('Mark as read error:', error);
+      // Silent fail - not critical
+    }
+  };
+
 
   return (
     <div className="min-h-screen">
@@ -422,12 +441,16 @@ const MentorDashboard = () => {
               onReactToMessage={handleReaction}
               onDeleteForMe={handleDeleteForMe}
               onDeleteForEveryone={handleDeleteForEveryone}
+              onEditMessage={handleEditMessage}
+              onMarkAsRead={handleMarkAsRead}
               currentUserType="mentor"
               currentUserId={user?.user_id}
               otherPartyName={selectedTeam?.team_name || ''}
               isLoading={false}
               onRefresh={refreshCommunications}
               pollingInterval={3000}
+              teamId={selectedTeam?.team_id}
+              mentorId={user?.user_id}
             />
           </div>
         </DialogContent>

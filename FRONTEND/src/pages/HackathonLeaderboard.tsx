@@ -7,8 +7,9 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { useToast } from '@/hooks/use-toast';
 import { useAutoRefresh } from '@/hooks/use-auto-refresh';
-import { Trophy, Medal, Award, ArrowLeft, Users, Calendar, RefreshCw } from 'lucide-react';
+import { Trophy, Medal, Award, ArrowLeft, Users, Calendar } from 'lucide-react';
 import { hackathonAPI } from '@/lib/api';
+import { formatDate } from '@/lib/utils';
 
 interface LeaderboardEntry {
   team_id: number;
@@ -39,7 +40,6 @@ const HackathonLeaderboard = () => {
   const [isFinalized, setIsFinalized] = useState(false);
   const [finalizedAt, setFinalizedAt] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     fetchData();
@@ -49,8 +49,6 @@ const HackathonLeaderboard = () => {
     try {
       if (showLoading) {
         setLoading(true);
-      } else {
-        setRefreshing(true);
       }
       
       const [hackathonRes, leaderboardRes] = await Promise.all([
@@ -70,12 +68,11 @@ const HackathonLeaderboard = () => {
       });
     } finally {
       setLoading(false);
-      setRefreshing(false);
     }
   };
 
   // Auto-refresh every 1 second for real-time updates (silent refresh)
-  const { refresh } = useAutoRefresh({
+  useAutoRefresh({
     enabled: true,
     interval: 1000, // 1 second
     onRefresh: () => fetchData(false) // false = no loading screen, just silent update
@@ -146,24 +143,13 @@ const HackathonLeaderboard = () => {
         <div className="container mx-auto max-w-6xl">
           {/* Header */}
           <div className="mb-6">
-            <div className="flex justify-between items-center mb-4">
+            <div className="flex justify-between items-center mb-6">
               <Button 
                 variant="ghost" 
                 onClick={() => navigate('/hackathons')}
               >
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 Back to Hackathons
-              </Button>
-              
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={refresh}
-                disabled={refreshing}
-                className="gap-2"
-              >
-                <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
-                {refreshing ? 'Refreshing...' : 'Refresh'}
               </Button>
             </div>
             
@@ -183,7 +169,7 @@ const HackathonLeaderboard = () => {
                     <span className="font-semibold text-yellow-500">🏆 This is the Final Standing</span>
                     {finalizedAt && (
                       <span className="text-xs text-muted-foreground">
-                        • Finalized on {new Date(finalizedAt).toLocaleDateString()}
+                        • Finalized on {formatDate(finalizedAt)}
                       </span>
                     )}
                   </div>
@@ -203,7 +189,7 @@ const HackathonLeaderboard = () => {
                 {hackathon && (
                   <div className="flex items-center justify-center gap-3 mt-4">
                     <Badge variant="secondary">{hackathon.category}</Badge>
-                    <Badge variant="outline">Prize Pool: {hackathon.prize_pool}</Badge>
+                    <Badge variant="outline">Prize Pool: {String(hackathon.prize_pool).replace(/₹/g, '')}</Badge>
                   </div>
                 )}
               </div>
@@ -320,7 +306,7 @@ const HackathonLeaderboard = () => {
                               </span>
                               <span className="flex items-center gap-1">
                                 <Calendar className="w-3 h-3" />
-                                {new Date(entry.submission_date).toLocaleDateString()}
+                                {formatDate(entry.submission_date)}
                               </span>
                             </div>
                           </div>

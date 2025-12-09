@@ -229,18 +229,34 @@ class Mentor {
       [teamId, mentorId]
     );
     
-    // Parse reactions JSON for each communication
-    return communications.map(comm => ({
-      ...comm,
-      reactions: comm.reactions ? (typeof comm.reactions === 'string' ? JSON.parse(comm.reactions) : comm.reactions) : {}
-    }));
+    // Parse reactions JSON and clean message text for each communication
+    return communications.map(comm => {
+      const cleaned = {
+        communication_id: comm.communication_id,
+        team_id: comm.team_id,
+        mentor_id: comm.mentor_id,
+        sender_type: comm.sender_type,
+        message_text: comm.message_text ? String(comm.message_text).replace(/\s*\n\s*0\s*$/g, '').replace(/\s+0\s*$/g, '').replace(/\n0$/g, '').replace(/\s0$/g, '').trim() : comm.message_text,
+        file_url: comm.file_url,
+        file_name: comm.file_name,
+        created_at: comm.created_at,
+        is_edited: Boolean(comm.is_edited),
+        edited_at: comm.edited_at,
+        reactions: comm.reactions ? (typeof comm.reactions === 'string' ? JSON.parse(comm.reactions) : comm.reactions) : {},
+        deleted_for_sender: Boolean(comm.deleted_for_sender),
+        deleted_for_receiver: Boolean(comm.deleted_for_receiver),
+        deleted_for_everyone: Boolean(comm.deleted_for_everyone),
+        deleted_at: comm.deleted_at
+      };
+      return cleaned;
+    });
   }
 
   // Add reaction to a message
   static async addReaction(communicationId, userId, emoji) {
-    // Get current reactions
+    // Get current reactions and room info
     const [rows] = await db.query(
-      'SELECT reactions FROM team_mentor_communications WHERE communication_id = ?',
+      'SELECT reactions, team_id, mentor_id FROM team_mentor_communications WHERE communication_id = ?',
       [communicationId]
     );
 
@@ -269,14 +285,18 @@ class Mentor {
       [JSON.stringify(reactions), communicationId]
     );
 
-    return reactions;
+    return {
+      reactions,
+      team_id: rows[0].team_id,
+      mentor_id: rows[0].mentor_id
+    };
   }
 
   // Delete message for me (mentor)
   static async deleteMessageForMe(communicationId, userId) {
-    // Check if message was sent by this user
+    // Check if message was sent by this user and get room info
     const [rows] = await db.query(
-      'SELECT sender_type FROM team_mentor_communications WHERE communication_id = ?',
+      'SELECT sender_type, team_id, mentor_id FROM team_mentor_communications WHERE communication_id = ?',
       [communicationId]
     );
 
@@ -292,14 +312,18 @@ class Mentor {
       [communicationId]
     );
 
-    return { success: true };
+    return { 
+      success: true,
+      team_id: rows[0].team_id,
+      mentor_id: rows[0].mentor_id
+    };
   }
 
   // Delete message for everyone
   static async deleteMessageForEveryone(communicationId, userId) {
     // Only sender can delete for everyone
     const [rows] = await db.query(
-      'SELECT sender_type, mentor_id, created_at FROM team_mentor_communications WHERE communication_id = ?',
+      'SELECT sender_type, mentor_id, team_id, created_at FROM team_mentor_communications WHERE communication_id = ?',
       [communicationId]
     );
 
@@ -314,21 +338,73 @@ class Mentor {
       throw new Error('Only the sender can delete message for everyone');
     }
 
-    // Check if message is older than 1 hour (optional: you can remove this check)
-    const messageTime = new Date(message.created_at);
-    const now = new Date();
-    const hoursDiff = (now - messageTime) / (1000 * 60 * 60);
-    
-    if (hoursDiff > 1) {
-      throw new Error('Cannot delete messages older than 1 hour for everyone');
-    }
-
     await db.query(
       'UPDATE team_mentor_communications SET deleted_for_everyone = TRUE, deleted_at = NOW() WHERE communication_id = ?',
       [communicationId]
     );
 
-    return { success: true };
+    return { 
+      success: true,
+      team_id: message.team_id,
+      mentor_id: message.mentor_id
+    };
+  }
+
+  // Edit message (mentor)
+  static async editMessage(communicationId, userId, newMessageText) {
+    // Check if user is the sender
+    const [rows] = await db.query(
+      'SELECT sender_type, mentor_id, team_id FROM team_mentor_communications WHERE communication_id = ?',
+      [communicationId]
+    );
+
+    if (rows.length === 0) {
+      throw new Error('Message not found');
+    }
+
+    const message = rows[0];
+    
+    // Check if user is the sender
+    if (message.sender_type !== 'mentor' || message.mentor_id !== userId) {
+      throw new Error('Only the sender can edit the message');
+    }
+
+    // Update the message
+    await db.query(
+      'UPDATE team_mentor_communications SET message_text = ?, is_edited = TRUE, edited_at = NOW() WHERE communication_id = ?',
+      [newMessageText, communicationId]
+    );
+
+    return { 
+      success: true,
+      team_id: message.team_id,
+      mentor_id: message.mentor_id,
+      message_text: newMessageText
+    };
+  }
+
+  // Mark messages as read (mentor reading team's messages)
+  static async markMessagesAsRead(teamId, mentorId, userId) {
+    // Verify the user is the mentor
+    if (mentorId !== userId) {
+      throw new Error('Unauthorized');
+    }
+
+    // Mark all unread messages from team as read
+    await db.query(
+      `UPDATE team_mentor_communications 
+       SET is_read = TRUE, read_at = NOW() 
+       WHERE team_id = ? AND mentor_id = ? 
+       AND sender_type = 'team' 
+       AND is_read = FALSE`,
+      [teamId, mentorId]
+    );
+
+    return { 
+      success: true,
+      team_id: teamId,
+      mentor_id: mentorId
+    };
   }
 }
 

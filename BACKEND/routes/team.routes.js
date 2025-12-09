@@ -63,6 +63,12 @@ router.get('/:teamId/communications/:mentorId', isTeamMember, teamController.get
 // Add reaction to message
 router.post('/communications/:communicationId/react', isTeamMember, teamController.addReaction);
 
+// Edit message
+router.put('/communications/:communicationId/edit', isTeamMember, teamController.editMessage);
+
+// Mark messages as read
+router.post('/:teamId/communications/:mentorId/mark-read', isTeamMember, teamController.markMessagesAsRead);
+
 // Delete message for me
 router.delete('/communications/:communicationId/delete-for-me', isTeamMember, teamController.deleteMessageForMe);
 

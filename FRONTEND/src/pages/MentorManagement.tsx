@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { mentorAPI, teamAPI } from '@/lib/api';
+import { formatDate } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -605,7 +606,7 @@ export default function MentorManagement() {
                               <div>
                                 <p className="text-muted-foreground">Deadline</p>
                                 <p className="font-medium">
-                                  {new Date(team.submission_deadline).toLocaleDateString()}
+                                  {formatDate(team.submission_deadline)}
                                 </p>
                               </div>
                             )}

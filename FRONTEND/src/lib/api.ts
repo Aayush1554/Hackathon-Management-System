@@ -164,6 +164,12 @@ export const teamAPI = {
   addReaction: (communicationId: number, emoji: string) =>
     api.post(`/teams/communications/${communicationId}/react`, { emoji }),
   
+  editMessage: (communicationId: number, message_text: string) =>
+    api.put(`/teams/communications/${communicationId}/edit`, { message_text }),
+  
+  markMessagesAsRead: (teamId: number, mentorId: number) =>
+    api.post(`/teams/${teamId}/communications/${mentorId}/mark-read`),
+  
   deleteMessageForMe: (communicationId: number) =>
     api.delete(`/teams/communications/${communicationId}/delete-for-me`),
   
@@ -217,6 +223,12 @@ export const mentorAPI = {
   
   addReaction: (communicationId: number, emoji: string) =>
     api.post(`/mentors/communications/${communicationId}/react`, { emoji }),
+  
+  editMessage: (communicationId: number, message_text: string) =>
+    api.put(`/mentors/communications/${communicationId}/edit`, { message_text }),
+  
+  markMessagesAsRead: (teamId: number, mentorId: number) =>
+    api.post(`/mentors/communications/${teamId}/${mentorId}/mark-read`),
   
   deleteMessageForMe: (communicationId: number) =>
     api.delete(`/mentors/communications/${communicationId}/delete-for-me`),

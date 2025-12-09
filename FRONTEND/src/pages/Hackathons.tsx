@@ -338,9 +338,9 @@ const Hackathons = () => {
                       <span className="text-2xl font-bold text-primary">
                         {typeof hackathon.prize_pool === 'number' 
                           ? `$${hackathon.prize_pool.toLocaleString()}` 
-                          : hackathon.prize_pool.toString().startsWith('$') 
-                            ? hackathon.prize_pool 
-                            : `$${hackathon.prize_pool}`}
+                          : hackathon.prize_pool.toString().replace(/₹/g, '').startsWith('$') 
+                            ? hackathon.prize_pool.toString().replace(/₹/g, '') 
+                            : `$${hackathon.prize_pool.toString().replace(/₹/g, '')}`}
                       </span>
                     )}
                   </div>

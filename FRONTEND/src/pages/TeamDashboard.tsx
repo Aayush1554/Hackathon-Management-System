@@ -72,7 +72,7 @@ const TeamDashboard = () => {
   };
 
   // Auto-refresh every 1 second for real-time updates
-  // Silent auto-refresh every 15 seconds, only update state if data changes
+  // Silent auto-refresh - only update state if data actually changes (prevents blinking)
   useEffect(() => {
     let isMounted = true;
     const silentRefresh = async () => {
@@ -80,11 +80,14 @@ const TeamDashboard = () => {
         // Fetch hackathons
         const hackathonRes = await hackathonAPI.getAll();
         const hackathonsData = hackathonRes.data.data || hackathonRes.data || [];
-        const activeHackathons = hackathonsData.filter(
-          (h) => h.status === 'open' || h.status === 'ongoing' || h.status === '' || !h.status
-        );
-        if (isMounted && JSON.stringify(activeHackathons) !== JSON.stringify(hackathons)) {
-          setHackathons(activeHackathons);
+        const now = new Date();
+        const ongoingHackathons = hackathonsData.filter((h: any) => {
+          const regStart = new Date(h.registration_start_date);
+          const regEnd = new Date(h.registration_end_date);
+          return now >= regStart && now <= regEnd;
+        });
+        if (isMounted && JSON.stringify(ongoingHackathons) !== JSON.stringify(hackathons)) {
+          setHackathons(ongoingHackathons);
         }
 
         // Fetch teams
@@ -94,10 +97,10 @@ const TeamDashboard = () => {
           setMyTeams(teamsData);
         }
       } catch (err) {
-        // Silent fail
+        // Silent fail - don't show errors during background refresh
       }
     };
-    const interval = setInterval(silentRefresh, 15000); // 15 seconds
+    const interval = setInterval(silentRefresh, 1000); // 1 second for real-time updates
     return () => {
       isMounted = false;
       clearInterval(interval);
@@ -108,11 +111,16 @@ const TeamDashboard = () => {
     try {
       const response = await hackathonAPI.getAll();
       const hackathonsData = response.data.data || response.data || [];
-      // Filter only open, ongoing hackathons, and those with empty status (default to open)
-      const activeHackathons = hackathonsData.filter(
-        (h: any) => h.status === 'open' || h.status === 'ongoing' || h.status === '' || !h.status
-      );
-      setHackathons(activeHackathons);
+      
+      // Filter hackathons that are currently in registration period
+      const now = new Date();
+      const ongoingHackathons = hackathonsData.filter((h: any) => {
+        const regStart = new Date(h.registration_start_date);
+        const regEnd = new Date(h.registration_end_date);
+        return now >= regStart && now <= regEnd;
+      });
+      
+      setHackathons(ongoingHackathons);
     } catch (error) {
       console.error('Failed to fetch hackathons:', error);
       setHackathons([]);
@@ -131,6 +139,12 @@ const TeamDashboard = () => {
   };
 
   const handleRegisterTeam = (hackathon: any) => {
+    // Check if already registered
+    if (isRegisteredForHackathon(hackathon.hackathon_id)) {
+      toast.error("You are already registered for this hackathon!");
+      return;
+    }
+    
     setSelectedHackathon(hackathon);
     setShowRegisterModal(true);
   };
@@ -153,9 +167,19 @@ const TeamDashboard = () => {
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     
     if (diffDays < 0) return "Ended";
-    if (diffDays === 0) return "Today";
+    if (diffDays === 0) return "Ends today";
     if (diffDays === 1) return "1 day left";
     return `${diffDays} days left`;
+  };
+
+  // Check if user is already registered for a hackathon
+  const isRegisteredForHackathon = (hackathonId: number) => {
+    return myTeams.some(team => team.hackathon_id === hackathonId);
+  };
+
+  // Get unregistered ongoing hackathons
+  const getUnregisteredHackathons = () => {
+    return hackathons.filter(h => !isRegisteredForHackathon(h.hackathon_id));
   };
 
   const handleViewTeamDetails = async (team: any) => {
@@ -226,8 +250,8 @@ const TeamDashboard = () => {
             
             <Card className="glass-card p-6">
               <Users className="w-8 h-8 text-accent mb-4" />
-              <div className="text-2xl font-bold mb-2">{hackathons.length}</div>
-              <div className="text-sm text-muted-foreground">Available Hackathons</div>
+              <div className="text-2xl font-bold mb-2">{getUnregisteredHackathons().length}</div>
+              <div className="text-sm text-muted-foreground">Ongoing Hackathons (Not Registered Yet)</div>
             </Card>
             
             <Card className="glass-card p-6">
@@ -342,7 +366,7 @@ const TeamDashboard = () => {
                           <MessageSquare className="w-4 h-4 mr-1" />
                           Mentor
                         </Button>
-                        {(team.status === "confirmed" || team.status === "registered") && (
+                        {(team.status === "forming" || team.status === "confirmed" || team.status === "registered") && (
                           <Button 
                             size="sm" 
                             className="bg-primary hover:bg-primary-glow text-primary-foreground flex-1"
@@ -359,10 +383,10 @@ const TeamDashboard = () => {
               )}
             </Card>
 
-            {/* Available Hackathons */}
+            {/* Ongoing Hackathons (Not Registered Yet) */}
             <Card className="glass-card p-6">
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-2xl font-bold">Available Hackathons</h2>
+                <h2 className="text-2xl font-bold">Ongoing Hackathons (Not Registered Yet)</h2>
                 <Button size="sm" className="bg-primary hover:bg-primary-glow text-primary-foreground" asChild>
                   <Link to="/hackathons">View All</Link>
                 </Button>
@@ -370,11 +394,11 @@ const TeamDashboard = () => {
               
               {loading ? (
                 <p className="text-center text-muted-foreground py-8">Loading...</p>
-              ) : hackathons.length === 0 ? (
-                <p className="text-center text-muted-foreground py-8">No active hackathons available</p>
+              ) : getUnregisteredHackathons().length === 0 ? (
+                <p className="text-center text-muted-foreground py-8">No ongoing hackathons available to register</p>
               ) : (
                 <div className="space-y-4">
-                  {hackathons.slice(0, 3).map((hackathon) => (
+                  {getUnregisteredHackathons().slice(0, 3).map((hackathon) => (
                     <div key={hackathon.hackathon_id} className="glass-card p-4 rounded-lg">
                       <div className="flex items-start justify-between mb-2">
                         <h3 className="font-semibold">{hackathon.title}</h3>
@@ -395,9 +419,9 @@ const TeamDashboard = () => {
                         <p className="text-sm font-semibold text-primary mb-3">
                           Prize: {typeof hackathon.prize_pool === 'number' 
                             ? `$${hackathon.prize_pool.toLocaleString()}` 
-                            : hackathon.prize_pool.toString().startsWith('$') 
-                              ? hackathon.prize_pool 
-                              : `$${hackathon.prize_pool}`}
+                            : hackathon.prize_pool.toString().replace(/₹/g, '').startsWith('$') 
+                              ? hackathon.prize_pool.toString().replace(/₹/g, '') 
+                              : `$${hackathon.prize_pool.toString().replace(/₹/g, '')}`}
                         </p>
                       )}
                       <div className="flex gap-2">
@@ -408,8 +432,9 @@ const TeamDashboard = () => {
                           size="sm" 
                           className="bg-primary flex-1"
                           onClick={() => handleRegisterTeam(hackathon)}
+                          disabled={isRegisteredForHackathon(hackathon.hackathon_id)}
                         >
-                          Register Team
+                          {isRegisteredForHackathon(hackathon.hackathon_id) ? 'Already Registered' : 'Register Team'}
                         </Button>
                       </div>
                     </div>

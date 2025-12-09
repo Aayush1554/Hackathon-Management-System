@@ -12,6 +12,7 @@ import { Plus, Edit, Trash2, X, Eye, Users } from "lucide-react";
 import { hackathonAPI } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import { formatDate } from "@/lib/utils";
 
 interface Hackathon {
   hackathon_id: number;
@@ -35,6 +36,7 @@ interface Hackathon {
   is_online: boolean;
   location?: string;
   status: string;
+  created_at?: string;
 }
 
 const AdminDashboard = () => {
@@ -45,6 +47,9 @@ const AdminDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState("All");
+  const [statusFilter, setStatusFilter] = useState("All");
   const [formData, setFormData] = useState({
     title: "",
     category: "Technology",
@@ -109,6 +114,36 @@ const AdminDashboard = () => {
     interval: 1000, // 1 second
     onRefresh: () => fetchHackathons(false) // false = no loading spinner
   });
+
+  // Get unique categories from hackathons
+  const categories = ["All", ...Array.from(new Set(hackathons.map(h => h.category)))];
+
+  // Get unique statuses
+  const statuses = ["All", "draft", "open", "in_progress", "judging", "completed", "cancelled"];
+
+  // Filter and sort hackathons
+  const filteredAndSortedHackathons = hackathons
+    .filter(hackathon => {
+      // Search filter
+      const matchesSearch = searchQuery === "" || 
+        hackathon.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        hackathon.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        hackathon.category?.toLowerCase().includes(searchQuery.toLowerCase());
+
+      // Category filter
+      const matchesCategory = categoryFilter === "All" || hackathon.category === categoryFilter;
+
+      // Status filter
+      const matchesStatus = statusFilter === "All" || hackathon.status === statusFilter;
+
+      return matchesSearch && matchesCategory && matchesStatus;
+    })
+    .sort((a, b) => {
+      // Sort by created date - latest first (newest on top)
+      const dateA = new Date(a.created_at || a.registration_start_date).getTime();
+      const dateB = new Date(b.created_at || b.registration_start_date).getTime();
+      return dateB - dateA; // Descending order (latest first)
+    });
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
@@ -545,14 +580,66 @@ const AdminDashboard = () => {
           )}
 
           <Card className="glass-card p-6">
-            <h2 className="text-2xl font-bold mb-6">All Hackathons</h2>
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-bold">All Hackathons</h2>
+              <div className="text-sm text-muted-foreground">
+                {filteredAndSortedHackathons.length} of {hackathons.length} hackathons
+              </div>
+            </div>
+
+            {/* Search and Filter Controls */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+              {/* Search */}
+              <div className="md:col-span-1">
+                <Input
+                  type="text"
+                  placeholder="Search hackathons..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full"
+                />
+              </div>
+
+              {/* Category Filter */}
+              <div>
+                <select
+                  value={categoryFilter}
+                  onChange={(e) => setCategoryFilter(e.target.value)}
+                  className="w-full px-3 py-2 border border-input bg-background rounded-md"
+                >
+                  {categories.map(cat => (
+                    <option key={cat} value={cat}>{cat}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Status Filter */}
+              <div>
+                <select
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                  className="w-full px-3 py-2 border border-input bg-background rounded-md"
+                >
+                  {statuses.map(status => (
+                    <option key={status} value={status}>
+                      {status === "All" ? "All Statuses" : status.charAt(0).toUpperCase() + status.slice(1)}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
             {loading ? (
               <p className="text-center text-muted-foreground py-8">Loading...</p>
-            ) : hackathons.length === 0 ? (
-              <p className="text-center text-muted-foreground py-8">No hackathons found. Create your first hackathon!</p>
+            ) : filteredAndSortedHackathons.length === 0 ? (
+              <p className="text-center text-muted-foreground py-8">
+                {hackathons.length === 0 
+                  ? "No hackathons found. Create your first hackathon!" 
+                  : "No hackathons match your filters."}
+              </p>
             ) : (
               <div className="space-y-4">
-                {hackathons.map((hackathon) => (
+                {filteredAndSortedHackathons.map((hackathon) => (
                   <div key={hackathon.hackathon_id} className="glass-card p-4 rounded-lg">
                     <div className="flex items-start justify-between mb-3">
                       <div className="flex-1">
@@ -602,9 +689,9 @@ const AdminDashboard = () => {
                     </div>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs text-muted-foreground">
                       <div>Team Size: {hackathon.min_team_size}-{hackathon.max_team_size}</div>
-                      {hackathon.prize_pool && <div>Prize: ${hackathon.prize_pool}</div>}
-                      <div>Reg: {new Date(hackathon.registration_end_date).toLocaleDateString()}</div>
-                      <div>Due: {new Date(hackathon.submission_deadline).toLocaleDateString()}</div>
+                      {hackathon.prize_pool && <div>Prize: ${String(hackathon.prize_pool).replace(/₹/g, '')}</div>}
+                      <div>Reg: {formatDate(hackathon.registration_end_date)}</div>
+                      <div>Due: {formatDate(hackathon.submission_deadline)}</div>
                     </div>
                   </div>
                 ))}

@@ -94,7 +94,11 @@ export const TeamDetailsModal = ({
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-1">
-                          <h4 className="font-semibold">{member.full_name}</h4>
+                          <h4 className="font-semibold">
+                            {member.full_name ? 
+                              member.full_name.replace(/\s+0+\s*$/, '').replace(/\n0+$/, '').trimEnd() 
+                              : member.full_name}
+                          </h4>
                           {member.is_leader && (
                             <Badge variant="secondary" className="bg-primary/20 text-primary border-primary/30 text-xs">
                               Leader

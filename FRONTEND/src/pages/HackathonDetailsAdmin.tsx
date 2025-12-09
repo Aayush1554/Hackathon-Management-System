@@ -25,6 +25,7 @@ import {
 import Navbar from "@/components/Navbar";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import { formatDate } from "@/lib/utils";
 import { 
   ArrowLeft, 
   Users, 
@@ -109,7 +110,7 @@ interface Hackathon {
 const HackathonDetailsAdmin = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { user, isAdmin } = useAuth();
+  const { user, isAdmin, loading: authLoading } = useAuth();
   const { toast } = useToast();
   
   const [hackathon, setHackathon] = useState<Hackathon | null>(null);
@@ -125,6 +126,9 @@ const HackathonDetailsAdmin = () => {
   const [leaderboardFinalized, setLeaderboardFinalized] = useState(false);
 
   useEffect(() => {
+    // Wait for auth to finish loading before checking authentication
+    if (authLoading) return;
+    
     if (!user || !isAdmin) {
       toast({
         title: "Access Denied",
@@ -136,7 +140,7 @@ const HackathonDetailsAdmin = () => {
     }
     fetchHackathonDetails();
     fetchTeams();
-  }, [id, user, isAdmin]);
+  }, [id, user, isAdmin, authLoading]);
 
   const fetchHackathonDetails = async () => {
     try {
@@ -260,16 +264,6 @@ const HackathonDetailsAdmin = () => {
     return <Badge className={config.color}>{config.label}</Badge>;
   };
 
-  const formatDate = (date: string) => {
-    return new Date(date).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  };
-
   const submittedTeams = teams.filter(t => t.status === 'submitted' || t.status === 'judged' || t.status === 'winner');
   const registeredTeams = teams.filter(t => t.status === 'registered' || t.status === 'confirmed');
 
@@ -332,7 +326,7 @@ const HackathonDetailsAdmin = () => {
                 </div>
                 <div className="flex flex-col gap-3 items-end">
                   <div className="text-right">
-                    <div className="text-2xl font-bold text-primary">{hackathon.prize_pool}</div>
+                    <div className="text-2xl font-bold text-primary">{String(hackathon.prize_pool).replace(/₹/g, '')}</div>
                     <div className="text-sm text-muted-foreground">Total Prize Pool</div>
                   </div>
                   <Button
@@ -543,7 +537,7 @@ const TeamsTable = ({ teams, onViewDetails, onEditScore, isFinalized }: { teams:
                     </Badge>
                   </TableCell>
                   <TableCell className="text-sm">
-                    {new Date(team.registration_date).toLocaleDateString()}
+                    {formatDate(team.registration_date)}
                   </TableCell>
                   <TableCell>
                     {team.total_score ? (
@@ -620,7 +614,11 @@ const TeamDetailsModal = ({
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <p className="text-sm text-muted-foreground">Team Leader</p>
-                <p className="font-medium">{team.leader_name}</p>
+                <p className="font-medium">
+                  {team.leader_name ? 
+                    team.leader_name.replace(/\s+0+\s*$/, '').replace(/\n0+$/, '').trimEnd() 
+                    : team.leader_name}
+                </p>
                 <p className="text-sm text-muted-foreground">{team.leader_email}</p>
               </div>
               <div>
@@ -662,7 +660,9 @@ const TeamDetailsModal = ({
                   <div key={member.member_id} className="flex items-center justify-between p-3 glass-card rounded-lg">
                     <div className="flex-1">
                       <p className="font-medium">
-                        {member.full_name}
+                        {member.full_name ? 
+                          member.full_name.replace(/\s+0+\s*$/, '').replace(/\n0+$/, '').trimEnd() 
+                          : member.full_name}
                         {member.is_leader && (
                           <Badge variant="outline" className="ml-2 text-yellow-500 border-yellow-500">Leader</Badge>
                         )}

@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { io, Socket } from "socket.io-client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -32,6 +33,11 @@ interface Message {
   file_name: string | null;
   created_at: string;
   reactions?: { [userId: string]: string }; // { "user_id": "emoji" }
+  is_edited?: boolean;
+  edited_at?: string;
+  is_delivered?: boolean;
+  is_read?: boolean;
+  read_at?: string;
 }
 
 interface ChatInterfaceProps {
@@ -40,12 +46,16 @@ interface ChatInterfaceProps {
   onReactToMessage?: (communicationId: number, emoji: string) => Promise<void>;
   onDeleteForMe?: (communicationId: number) => Promise<void>;
   onDeleteForEveryone?: (communicationId: number) => Promise<void>;
+  onEditMessage?: (communicationId: number, newText: string) => Promise<void>;
+  onMarkAsRead?: () => Promise<void>;
   currentUserType: 'team' | 'mentor';
   currentUserId?: number;
   otherPartyName: string;
   isLoading?: boolean;
   onRefresh?: () => Promise<void>;
   pollingInterval?: number; // in milliseconds, default 3000 (3 seconds)
+  teamId?: number; // Required for Socket.io room
+  mentorId?: number; // Required for Socket.io room
 }
 
 const ChatInterface = ({ 
@@ -54,35 +64,147 @@ const ChatInterface = ({
   onReactToMessage,
   onDeleteForMe,
   onDeleteForEveryone,
+  onEditMessage,
+  onMarkAsRead,
   currentUserType,
   currentUserId,
   otherPartyName,
   isLoading = false,
   onRefresh,
-  pollingInterval = 3000
+  pollingInterval = 3000,
+  teamId,
+  mentorId
 }: ChatInterfaceProps) => {
   const [messageText, setMessageText] = useState("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isSending, setIsSending] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [messageToDelete, setMessageToDelete] = useState<number | null>(null);
+  const [editingMessageId, setEditingMessageId] = useState<number | null>(null);
+  const [editText, setEditText] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const socketRef = useRef<Socket | null>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const previousMessageCountRef = useRef<number>(0);
+  const userScrolledUpRef = useRef<boolean>(false);
 
   // Common emojis for quick reactions
   const quickEmojis = ['👍', '❤️', '😊', '😂', '😮', '😢', '🎉', '🔥'];
+
+  // Clean message text by removing trailing zeros and whitespace
+  const cleanMessageText = (text: string): string => {
+    if (!text) return text;
+    // Remove any trailing whitespace, newlines, and zeros in various combinations
+    let cleaned = text
+      .replace(/\s*\n\s*0\s*$/g, '')  // newline followed by 0
+      .replace(/\s+0\s*$/g, '')        // spaces followed by 0
+      .replace(/\n0$/g, '')            // direct newline + 0
+      .replace(/\s0$/g, '')            // direct space + 0
+      .replace(/(\s|\n)+0+(\s|\n)*$/g, ''); // any combo of whitespace/newlines with zeros
+    return cleaned.trimEnd();
+  };
 
   // Sort messages in chronological order (oldest first, newest last)
   const sortedMessages = [...messages].sort((a, b) => 
     new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
   );
 
-  // Scroll to bottom when messages change
+  // Detect if user has scrolled up
+  const handleScroll = () => {
+    if (messagesContainerRef.current) {
+      const { scrollTop, scrollHeight, clientHeight } = messagesContainerRef.current;
+      const isAtBottom = scrollHeight - scrollTop - clientHeight < 50;
+      userScrolledUpRef.current = !isAtBottom;
+    }
+  };
+
+  // Smart scroll: Only scroll to bottom when new messages arrive or user is at bottom
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    const hasNewMessages = messages.length > previousMessageCountRef.current;
+    const shouldScroll = hasNewMessages && !userScrolledUpRef.current;
+    
+    if (shouldScroll || previousMessageCountRef.current === 0) {
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
+    
+    previousMessageCountRef.current = messages.length;
   }, [messages]);
 
-  // Auto-refresh messages with polling
+  // Socket.io connection for real-time updates
+  useEffect(() => {
+    if (!teamId || !mentorId) return;
+
+    // Connect to Socket.io server
+    const socket = io(import.meta.env.VITE_API_URL || 'http://localhost:5000', {
+      transports: ['websocket', 'polling'],
+      withCredentials: true
+    });
+
+    socketRef.current = socket;
+
+    // Join the communication room
+    const room = { teamId, mentorId };
+    socket.emit('join_communication', room);
+    console.log('🔌 Joined Socket.io room:', `team_${teamId}_mentor_${mentorId}`);
+
+    // Listen for new messages
+    socket.on('new_message', (data) => {
+      console.log('📩 Received new message:', data);
+      if (onRefresh) {
+        onRefresh();
+      }
+    });
+
+    // Listen for reactions
+    socket.on('message_reaction', (data) => {
+      console.log('👍 Received reaction:', data);
+      if (onRefresh) {
+        onRefresh();
+      }
+    });
+
+    // Listen for message deletions (for me)
+    socket.on('message_deleted_for_me', (data) => {
+      console.log('🗑️ Message deleted for me:', data);
+      if (onRefresh) {
+        onRefresh();
+      }
+    });
+
+    // Listen for message deletions (for everyone)
+    socket.on('message_deleted_for_everyone', (data) => {
+      console.log('🗑️ Message deleted for everyone:', data);
+      if (onRefresh) {
+        onRefresh();
+      }
+    });
+
+    // Listen for message edits
+    socket.on('message_edited', (data) => {
+      console.log('✏️ Message edited:', data);
+      if (onRefresh) {
+        onRefresh();
+      }
+    });
+
+    // Listen for read receipts
+    socket.on('messages_read', (data) => {
+      console.log('👀 Messages read:', data);
+      if (onRefresh) {
+        onRefresh();
+      }
+    });
+
+    // Clean up on unmount
+    return () => {
+      console.log('👋 Leaving Socket.io room');
+      socket.emit('leave_communication', room);
+      socket.disconnect();
+    };
+  }, [teamId, mentorId, onRefresh]);
+
+  // Auto-refresh messages with polling (fallback for Socket.io)
   useEffect(() => {
     if (!onRefresh) return;
 
@@ -187,6 +309,36 @@ const ChatInterface = ({
     }
   };
 
+  const handleStartEdit = (communicationId: number, currentText: string) => {
+    setEditingMessageId(communicationId);
+    setEditText(currentText);
+  };
+
+  const handleCancelEdit = () => {
+    setEditingMessageId(null);
+    setEditText("");
+  };
+
+  const handleSaveEdit = async (communicationId: number) => {
+    if (!onEditMessage || !editText.trim()) {
+      toast.error("Message cannot be empty");
+      return;
+    }
+
+    try {
+      await onEditMessage(communicationId, editText);
+      toast.success("Message updated");
+      setEditingMessageId(null);
+      setEditText("");
+      if (onRefresh) {
+        await onRefresh();
+      }
+    } catch (error: any) {
+      console.error('Edit message error:', error);
+      toast.error(error.response?.data?.message || "Failed to edit message");
+    }
+  };
+
   const getInitials = (name: string) => {
     return name
       .split(' ')
@@ -226,6 +378,8 @@ const ChatInterface = ({
 
       {/* Messages Area - SCROLLABLE */}
       <div 
+        ref={messagesContainerRef}
+        onScroll={handleScroll}
         className="flex-1 overflow-y-scroll p-4 space-y-4 scroll-smooth scrollbar-thin min-h-0" 
         style={{ 
           scrollbarWidth: 'thin',
@@ -250,43 +404,82 @@ const ChatInterface = ({
             return (
               <div
                 key={msg.communication_id}
-                className={`flex flex-col ${isSentByMe ? 'items-end' : 'items-start'}`}
+                className={`flex ${isSentByMe ? 'justify-end' : 'justify-start'} mb-2`}
               >
-                <div className="group relative">
-                  <div
-                    className={`max-w-[70%] rounded-lg p-3 ${
-                      isSentByMe
-                        ? 'bg-accent text-accent-foreground'
-                        : 'bg-secondary'
-                    }`}
-                  >
-                    {msg.message_text && (
-                      <p className="whitespace-pre-wrap break-words mb-1">
-                        {msg.message_text}
-                      </p>
+                <div className="flex flex-col max-w-[70%]">
+                  <div className="group relative">
+                    <div
+                      className={`inline-block rounded-lg p-3 ${
+                        isSentByMe
+                          ? 'bg-accent text-accent-foreground'
+                          : 'bg-secondary'
+                      }`}
+                    >
+                    {/* Edit Mode */}
+                    {editingMessageId === msg.communication_id ? (
+                      <div className="space-y-2">
+                        <Textarea
+                          value={editText}
+                          onChange={(e) => setEditText(e.target.value)}
+                          className="min-h-[60px] resize-none"
+                          autoFocus
+                        />
+                        <div className="flex gap-2 justify-end">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={handleCancelEdit}
+                          >
+                            Cancel
+                          </Button>
+                          <Button
+                            size="sm"
+                            onClick={() => handleSaveEdit(msg.communication_id)}
+                          >
+                            Save
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <>
+                        {msg.message_text && msg.message_text.trim() !== '' && (
+                          <div>
+                            <p className="whitespace-pre-wrap break-words mb-1">
+                              {cleanMessageText(msg.message_text)}
+                            </p>
+                            {msg.is_edited && (
+                              <span className="text-xs italic opacity-70">
+                                (edited)
+                              </span>
+                            )}
+                          </div>
+                        )}
+                        
+                        {msg.file_url && msg.file_name && (
+                          <a
+                            href={`http://localhost:5000${msg.file_url}`}
+                            download={msg.file_name}
+                            className={`flex items-center gap-2 mt-2 p-2 rounded ${
+                              isSentByMe
+                                ? 'bg-accent-foreground/10 hover:bg-accent-foreground/20'
+                                : 'bg-primary/10 hover:bg-primary/20'
+                            } transition-colors`}
+                          >
+                            <FileText className="w-4 h-4" />
+                            <span className="text-sm flex-1 truncate">{msg.file_name}</span>
+                            <Download className="w-4 h-4" />
+                          </a>
+                        )}
+                        
+                        <div className="flex items-center gap-2 justify-between">
+                          <p className={`text-xs mt-1 ${
+                            isSentByMe ? 'text-accent-foreground/70' : 'text-muted-foreground'
+                          }`}>
+                            {formatTime(msg.created_at)}
+                          </p>
+                        </div>
+                      </>
                     )}
-                    
-                    {msg.file_url && msg.file_name && (
-                      <a
-                        href={`http://localhost:5000${msg.file_url}`}
-                        download={msg.file_name}
-                        className={`flex items-center gap-2 mt-2 p-2 rounded ${
-                          isSentByMe
-                            ? 'bg-accent-foreground/10 hover:bg-accent-foreground/20'
-                            : 'bg-primary/10 hover:bg-primary/20'
-                        } transition-colors`}
-                      >
-                        <FileText className="w-4 h-4" />
-                        <span className="text-sm flex-1 truncate">{msg.file_name}</span>
-                        <Download className="w-4 h-4" />
-                      </a>
-                    )}
-                    
-                    <p className={`text-xs mt-1 ${
-                      isSentByMe ? 'text-accent-foreground/70' : 'text-muted-foreground'
-                    }`}>
-                      {formatTime(msg.created_at)}
-                    </p>
                   </div>
 
                   {/* Action Buttons - Show on hover */}
@@ -334,6 +527,15 @@ const ChatInterface = ({
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align={isSentByMe ? "end" : "start"}>
+                          {isSentByMe && onEditMessage && msg.message_text && (
+                            <DropdownMenuItem
+                              onClick={() => handleStartEdit(msg.communication_id, msg.message_text)}
+                              className="cursor-pointer"
+                            >
+                              <span className="w-4 h-4 mr-2">✏️</span>
+                              Edit message
+                            </DropdownMenuItem>
+                          )}
                           {onDeleteForMe && (
                             <DropdownMenuItem
                               onClick={() => {
@@ -390,6 +592,7 @@ const ChatInterface = ({
                     })}
                   </div>
                 )}
+                </div>
               </div>
             );
           })

@@ -133,7 +133,21 @@ class Team {
         [teamId]
       );
 
-      team.members = members;
+      // Clean names from trailing "0" and convert boolean fields
+      team.leader_name = team.leader_name ? String(team.leader_name).replace(/\s*\n\s*0\s*$/g, '').replace(/\s+0\s*$/g, '').replace(/\n0$/g, '').replace(/\s0$/g, '').trim() : team.leader_name;
+      
+      team.members = members.map(member => ({
+        member_id: member.member_id,
+        team_id: member.team_id,
+        user_id: member.user_id,
+        is_leader: Boolean(member.is_leader),
+        status: member.status,
+        joined_at: member.joined_at,
+        full_name: member.full_name ? String(member.full_name).replace(/\s*\n\s*0\s*$/g, '').replace(/\s+0\s*$/g, '').replace(/\n0$/g, '').replace(/\s0$/g, '').trim() : member.full_name,
+        email: member.email,
+        user_type: member.user_type
+      }));
+      
       return team;
     } catch (error) {
       throw error;
@@ -293,18 +307,34 @@ class Team {
       [teamId, mentorId]
     );
     
-    // Parse reactions JSON for each communication
-    return communications.map(comm => ({
-      ...comm,
-      reactions: comm.reactions ? (typeof comm.reactions === 'string' ? JSON.parse(comm.reactions) : comm.reactions) : {}
-    }));
+    // Parse reactions JSON and clean message text for each communication
+    return communications.map(comm => {
+      const cleaned = {
+        communication_id: comm.communication_id,
+        team_id: comm.team_id,
+        mentor_id: comm.mentor_id,
+        sender_type: comm.sender_type,
+        message_text: comm.message_text ? String(comm.message_text).replace(/\s*\n\s*0\s*$/g, '').replace(/\s+0\s*$/g, '').replace(/\n0$/g, '').replace(/\s0$/g, '').trim() : comm.message_text,
+        file_url: comm.file_url,
+        file_name: comm.file_name,
+        created_at: comm.created_at,
+        is_edited: Boolean(comm.is_edited),
+        edited_at: comm.edited_at,
+        reactions: comm.reactions ? (typeof comm.reactions === 'string' ? JSON.parse(comm.reactions) : comm.reactions) : {},
+        deleted_for_sender: Boolean(comm.deleted_for_sender),
+        deleted_for_receiver: Boolean(comm.deleted_for_receiver),
+        deleted_for_everyone: Boolean(comm.deleted_for_everyone),
+        deleted_at: comm.deleted_at
+      };
+      return cleaned;
+    });
   }
 
   // Add reaction to a message
   static async addReaction(communicationId, userId, emoji) {
-    // Get current reactions
+    // Get current reactions and room info
     const [rows] = await db.query(
-      'SELECT reactions FROM team_mentor_communications WHERE communication_id = ?',
+      'SELECT reactions, team_id, mentor_id FROM team_mentor_communications WHERE communication_id = ?',
       [communicationId]
     );
 
@@ -333,7 +363,11 @@ class Team {
       [JSON.stringify(reactions), communicationId]
     );
 
-    return reactions;
+    return {
+      reactions,
+      team_id: rows[0].team_id,
+      mentor_id: rows[0].mentor_id
+    };
   }
 
   // Delete message for me (team) - using userId to check if they're the sender
@@ -342,7 +376,7 @@ class Team {
     
     // First, get the message details
     const [rows] = await db.query(
-      'SELECT sender_type, team_id FROM team_mentor_communications WHERE communication_id = ?',
+      'SELECT sender_type, team_id, mentor_id FROM team_mentor_communications WHERE communication_id = ?',
       [communicationId]
     );
 
@@ -354,7 +388,8 @@ class Team {
     }
 
     const messageTeamId = rows[0].team_id;
-    console.log('[deleteMessageForMe] Message team_id:', messageTeamId);
+    const mentorId = rows[0].mentor_id;
+    console.log('[deleteMessageForMe] Message team_id:', messageTeamId, 'mentor_id:', mentorId);
 
     // Verify the user is a member of THIS specific team (the one in the message)
     const [userTeam] = await db.query(
@@ -380,7 +415,11 @@ class Team {
     );
 
     console.log('[deleteMessageForMe] SUCCESS: Message deleted');
-    return { success: true };
+    return { 
+      success: true,
+      team_id: messageTeamId,
+      mentor_id: mentorId
+    };
   }
 
   // Delete message for everyone (team) - using userId
@@ -389,7 +428,7 @@ class Team {
     
     // First, get the message details
     const [rows] = await db.query(
-      'SELECT sender_type, team_id, created_at FROM team_mentor_communications WHERE communication_id = ?',
+      'SELECT sender_type, team_id, mentor_id, created_at FROM team_mentor_communications WHERE communication_id = ?',
       [communicationId]
     );
 
@@ -402,6 +441,7 @@ class Team {
 
     const message = rows[0];
     const messageTeamId = message.team_id;
+    const mentorId = message.mentor_id;
     console.log('[deleteMessageForEveryone] Message:', message);
     
     // Verify the user is a member of THIS specific team (the one in the message)
@@ -423,25 +463,97 @@ class Team {
       throw new Error('Only the sender can delete message for everyone');
     }
 
-    // Check if message is older than 1 hour (optional: you can remove this check)
-    const messageTime = new Date(message.created_at);
-    const now = new Date();
-    const hoursDiff = (now - messageTime) / (1000 * 60 * 60);
-    
-    console.log('[deleteMessageForEveryone] Message age (hours):', hoursDiff);
-    
-    if (hoursDiff > 1) {
-      console.log('[deleteMessageForEveryone] ERROR: Message too old');
-      throw new Error('Cannot delete messages older than 1 hour for everyone');
-    }
-
     await db.query(
       'UPDATE team_mentor_communications SET deleted_for_everyone = TRUE, deleted_at = NOW() WHERE communication_id = ?',
       [communicationId]
     );
 
     console.log('[deleteMessageForEveryone] SUCCESS: Message deleted for everyone');
-    return { success: true };
+    return { 
+      success: true,
+      team_id: messageTeamId,
+      mentor_id: mentorId
+    };
+  }
+
+  // Edit message (team) - using userId
+  static async editMessage(communicationId, userId, newMessageText) {
+    console.log('[editMessage] Starting - communicationId:', communicationId, 'userId:', userId);
+    
+    // First, get the message details
+    const [rows] = await db.query(
+      'SELECT sender_type, team_id, mentor_id, message_text FROM team_mentor_communications WHERE communication_id = ?',
+      [communicationId]
+    );
+
+    if (!rows || rows.length === 0) {
+      throw new Error('Message not found');
+    }
+
+    const message = rows[0];
+    const messageTeamId = message.team_id;
+    const mentorId = message.mentor_id;
+    
+    // Verify the user is a member of THIS specific team
+    const [userTeam] = await db.query(
+      'SELECT team_id FROM team_members WHERE user_id = ? AND team_id = ?',
+      [userId, messageTeamId]
+    );
+
+    if (!userTeam || userTeam.length === 0) {
+      throw new Error('User is not a member of this team');
+    }
+
+    // Check if team is the sender
+    if (message.sender_type !== 'team') {
+      throw new Error('Only the sender can edit the message');
+    }
+
+    // Update the message
+    await db.query(
+      'UPDATE team_mentor_communications SET message_text = ?, is_edited = TRUE, edited_at = NOW() WHERE communication_id = ?',
+      [newMessageText, communicationId]
+    );
+
+    console.log('[editMessage] SUCCESS: Message edited');
+    return { 
+      success: true,
+      team_id: messageTeamId,
+      mentor_id: mentorId,
+      message_text: newMessageText
+    };
+  }
+
+  // Mark messages as read (team reading mentor's messages)
+  static async markMessagesAsRead(teamId, mentorId, userId) {
+    console.log('[markMessagesAsRead] Starting - teamId:', teamId, 'mentorId:', mentorId, 'userId:', userId);
+    
+    // Verify the user is a member of THIS team
+    const [userTeam] = await db.query(
+      'SELECT team_id FROM team_members WHERE user_id = ? AND team_id = ?',
+      [userId, teamId]
+    );
+
+    if (!userTeam || userTeam.length === 0) {
+      throw new Error('User is not a member of this team');
+    }
+
+    // Mark all unread messages from mentor as read
+    await db.query(
+      `UPDATE team_mentor_communications 
+       SET is_read = TRUE, read_at = NOW() 
+       WHERE team_id = ? AND mentor_id = ? 
+       AND sender_type = 'mentor' 
+       AND is_read = FALSE`,
+      [teamId, mentorId]
+    );
+
+    console.log('[markMessagesAsRead] SUCCESS: Messages marked as read');
+    return { 
+      success: true,
+      team_id: teamId,
+      mentor_id: mentorId
+    };
   }
 }
 

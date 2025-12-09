@@ -364,12 +364,28 @@ exports.sendCommunication = async (req, res) => {
     const file_url = req.file ? `/uploads/communications/${req.file.filename}` : null;
     const file_name = req.file ? req.file.originalname : null;
     
+    const mentor_id = req.user.user_id;
+    
     const communicationId = await Mentor.sendCommunication({
       team_id,
-      mentor_id: req.user.user_id,
+      mentor_id,
       message_text,
       file_url,
       file_name
+    });
+    
+    // Emit Socket.io event for real-time update
+    const io = req.app.get('io');
+    const room = `team_${team_id}_mentor_${mentor_id}`;
+    io.to(room).emit('new_message', {
+      communication_id: communicationId,
+      team_id,
+      mentor_id,
+      sender_type: 'mentor',
+      message_text,
+      file_url,
+      file_name,
+      created_at: new Date().toISOString()
     });
     
     res.status(201).json({
@@ -424,6 +440,18 @@ exports.addReaction = async (req, res) => {
 
     const result = await Mentor.addReaction(communicationId, userId, emoji);
     
+    // Emit Socket.io event for real-time update
+    if (result && result.team_id && result.mentor_id) {
+      const io = req.app.get('io');
+      const room = `team_${result.team_id}_mentor_${result.mentor_id}`;
+      io.to(room).emit('message_reaction', {
+        communication_id: communicationId,
+        user_id: userId,
+        emoji,
+        reactions: result.reactions
+      });
+    }
+    
     res.json({
       success: true,
       message: 'Reaction added successfully',
@@ -445,7 +473,17 @@ exports.deleteMessageForMe = async (req, res) => {
     const { communicationId } = req.params;
     const userId = req.user.user_id;
 
-    await Mentor.deleteMessageForMe(communicationId, userId);
+    const result = await Mentor.deleteMessageForMe(communicationId, userId);
+    
+    // Emit Socket.io event for real-time update
+    if (result && result.team_id && result.mentor_id) {
+      const io = req.app.get('io');
+      const room = `team_${result.team_id}_mentor_${result.mentor_id}`;
+      io.to(room).emit('message_deleted_for_me', {
+        communication_id: communicationId,
+        user_id: userId
+      });
+    }
     
     res.json({
       success: true,
@@ -467,7 +505,17 @@ exports.deleteMessageForEveryone = async (req, res) => {
     const { communicationId } = req.params;
     const userId = req.user.user_id;
 
-    await Mentor.deleteMessageForEveryone(communicationId, userId);
+    const result = await Mentor.deleteMessageForEveryone(communicationId, userId);
+    
+    // Emit Socket.io event for real-time update
+    if (result && result.team_id && result.mentor_id) {
+      const io = req.app.get('io');
+      const room = `team_${result.team_id}_mentor_${result.mentor_id}`;
+      io.to(room).emit('message_deleted_for_everyone', {
+        communication_id: communicationId,
+        deleted_by: userId
+      });
+    }
     
     res.json({
       success: true,
@@ -478,6 +526,81 @@ exports.deleteMessageForEveryone = async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Failed to delete message for everyone',
+      error: error.message
+    });
+  }
+};
+
+// Edit message
+exports.editMessage = async (req, res) => {
+  try {
+    const { communicationId } = req.params;
+    const { message_text } = req.body;
+    const userId = req.user.user_id;
+
+    if (!message_text || message_text.trim() === '') {
+      return res.status(400).json({
+        success: false,
+        message: 'Message text is required'
+      });
+    }
+
+    const result = await Mentor.editMessage(communicationId, userId, message_text);
+    
+    // Emit Socket.io event for real-time update
+    if (result && result.team_id && result.mentor_id) {
+      const io = req.app.get('io');
+      const room = `team_${result.team_id}_mentor_${result.mentor_id}`;
+      io.to(room).emit('message_edited', {
+        communication_id: communicationId,
+        message_text: result.message_text,
+        edited_by: userId
+      });
+    }
+    
+    res.json({
+      success: true,
+      message: 'Message edited successfully',
+      data: result
+    });
+  } catch (error) {
+    console.error('Edit message error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to edit message',
+      error: error.message
+    });
+  }
+};
+
+// Mark messages as read
+exports.markMessagesAsRead = async (req, res) => {
+  try {
+    const { teamId, mentorId } = req.params;
+    const userId = req.user.user_id;
+
+    const result = await Mentor.markMessagesAsRead(Number(teamId), Number(mentorId), userId);
+    
+    // Emit Socket.io event for real-time update (to update read receipts)
+    if (result && result.team_id && result.mentor_id) {
+      const io = req.app.get('io');
+      const room = `team_${result.team_id}_mentor_${result.mentor_id}`;
+      io.to(room).emit('messages_read', {
+        team_id: result.team_id,
+        mentor_id: result.mentor_id,
+        read_by: 'mentor'
+      });
+    }
+    
+    res.json({
+      success: true,
+      message: 'Messages marked as read'
+    });
+  } catch (error) {
+    console.error('Mark messages as read error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to mark messages as read',
       error: error.message
     });
   }

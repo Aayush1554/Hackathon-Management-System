@@ -12,6 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { Calendar, User, Mail, Phone, Building } from 'lucide-react';
+import { formatDateTime } from '@/lib/utils';
 import ChatInterface from './ChatInterface';
 
 interface Meeting {
@@ -171,6 +172,25 @@ function MentorContentModal({ open, onClose, teamId }: MentorContentModalProps) 
     }
   };
 
+  const handleEditMessage = async (communicationId: number, newText: string) => {
+    try {
+      await teamAPI.editMessage(communicationId, newText);
+      await loadCommunications();
+    } catch (error: any) {
+      throw error; // Let ChatInterface handle the error display
+    }
+  };
+
+  const handleMarkAsRead = async () => {
+    if (!teamId || !mentor) return;
+    try {
+      await teamAPI.markMessagesAsRead(teamId, mentor.user_id);
+    } catch (error: any) {
+      console.error('Mark as read error:', error);
+      // Silent fail - not critical
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="glass-card max-w-5xl h-[90vh] flex flex-col overflow-hidden">
@@ -203,12 +223,16 @@ function MentorContentModal({ open, onClose, teamId }: MentorContentModalProps) 
                 onReactToMessage={handleReaction}
                 onDeleteForMe={handleDeleteForMe}
                 onDeleteForEveryone={handleDeleteForEveryone}
+                onEditMessage={handleEditMessage}
+                onMarkAsRead={handleMarkAsRead}
                 currentUserType="team"
                 currentUserId={user?.user_id}
                 otherPartyName={mentor.full_name}
                 isLoading={loading}
                 onRefresh={loadCommunications}
                 pollingInterval={3000}
+                teamId={teamId}
+                mentorId={mentor.user_id}
               />
             </TabsContent>
 
@@ -227,7 +251,7 @@ function MentorContentModal({ open, onClose, teamId }: MentorContentModalProps) 
                     <CardContent className="space-y-2">
                       <div className="flex items-center gap-2 text-sm">
                         <Calendar className="w-4 h-4" />
-                        <span>{new Date(meeting.meeting_date).toLocaleString()}</span>
+                        <span>{formatDateTime(meeting.meeting_date)}</span>
                       </div>
                       {meeting.description && (
                         <p className="text-sm text-muted-foreground">{meeting.description}</p>

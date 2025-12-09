@@ -1,9 +1,20 @@
 const express = require('express');
 const cors = require('cors');
 const morgan = require('morgan');
+const http = require('http');
+const { Server } = require('socket.io');
 require('dotenv').config();
 
 const app = express();
+const server = http.createServer(app);
+const io = new Server(server, {
+  cors: {
+    origin: process.env.FRONTEND_URL || 'http://localhost:8080',
+    credentials: true,
+    methods: ['GET', 'POST']
+  }
+});
+
 const PORT = process.env.PORT || 5000;
 
 // Middleware
@@ -14,6 +25,9 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(morgan('dev'));
+
+// Make io accessible to routes
+app.set('io', io);
 
 // Static files for uploads
 app.use('/uploads', express.static('uploads'));
@@ -58,10 +72,34 @@ app.use((err, req, res, next) => {
   });
 });
 
-app.listen(PORT, () => {
+// Socket.io connection handling
+io.on('connection', (socket) => {
+  console.log('🔌 User connected:', socket.id);
+
+  // Join a team-mentor communication room
+  socket.on('join_communication', ({ teamId, mentorId }) => {
+    const room = `team_${teamId}_mentor_${mentorId}`;
+    socket.join(room);
+    console.log(`✅ Socket ${socket.id} joined room: ${room}`);
+  });
+
+  // Leave a communication room
+  socket.on('leave_communication', ({ teamId, mentorId }) => {
+    const room = `team_${teamId}_mentor_${mentorId}`;
+    socket.leave(room);
+    console.log(`👋 Socket ${socket.id} left room: ${room}`);
+  });
+
+  socket.on('disconnect', () => {
+    console.log('❌ User disconnected:', socket.id);
+  });
+});
+
+server.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
   console.log(`📍 API: http://localhost:${PORT}/api`);
   console.log(`🌐 Frontend: ${process.env.FRONTEND_URL}`);
+  console.log(`🔌 WebSocket ready for real-time communication`);
 });
 
 module.exports = app;

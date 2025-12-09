@@ -80,6 +80,12 @@ router.get('/communications/:teamId', isMentor, mentorController.getCommunicatio
 // Add reaction to message
 router.post('/communications/:communicationId/react', isMentor, mentorController.addReaction);
 
+// Edit message
+router.put('/communications/:communicationId/edit', isMentor, mentorController.editMessage);
+
+// Mark messages as read
+router.post('/communications/:teamId/:mentorId/mark-read', isMentor, mentorController.markMessagesAsRead);
+
 // Delete message for me
 router.delete('/communications/:communicationId/delete-for-me', isMentor, mentorController.deleteMessageForMe);
 

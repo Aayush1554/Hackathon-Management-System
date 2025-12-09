@@ -5,9 +5,11 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import TeamRegistrationModal from "@/components/TeamRegistrationModal";
 import { ArrowLeft, Calendar, Users, Trophy, Clock, MapPin } from "lucide-react";
 import { hackathonAPI, teamAPI } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
+import { formatDate } from "@/lib/utils";
 
 interface Hackathon {
   hackathon_id: number;
@@ -45,6 +47,7 @@ const HackathonDetails = () => {
   const [loading, setLoading] = useState(true);
   const [isRegistered, setIsRegistered] = useState(false);
   const [checkingRegistration, setCheckingRegistration] = useState(false);
+  const [showRegistrationModal, setShowRegistrationModal] = useState(false);
 
   useEffect(() => {
     if (id) {
@@ -94,22 +97,51 @@ const HackathonDetails = () => {
     return diffDays;
   };
 
+  // Determine hackathon status based on registration dates
+  const getHackathonStatus = () => {
+    if (!hackathon) return { status: 'unknown', canRegister: false };
+    
+    const now = new Date();
+    const regStart = new Date(hackathon.registration_start_date);
+    const regEnd = new Date(hackathon.registration_end_date);
+    
+    // Upcoming: registration start date is in the future
+    if (now < regStart) {
+      return { status: 'upcoming', canRegister: false, label: 'Coming Soon' };
+    }
+    
+    // Ongoing: registration is currently open (between start and end dates)
+    if (now >= regStart && now <= regEnd) {
+      return { status: 'ongoing', canRegister: true, label: 'Registration Open' };
+    }
+    
+    // Ended: registration end date has passed
+    if (now > regEnd) {
+      return { status: 'ended', canRegister: false, label: 'Registration Closed' };
+    }
+    
+    return { status: 'unknown', canRegister: false, label: 'Unknown' };
+  };
+
+  const hackathonStatus = hackathon ? getHackathonStatus() : { status: 'unknown', canRegister: false, label: 'Unknown' };
+
   const handleRegisterClick = () => {
     // If user is not logged in, redirect to team login page
     if (!isAuthenticated) {
       navigate('/login/team');
       return;
     }
-    // If user is logged in, go to registration page
-    navigate(`/register/team?hackathon=${id}`);
+    // If user is logged in, open the registration modal directly
+    setShowRegistrationModal(true);
   };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric'
-    });
+  const handleRegistrationSuccess = () => {
+    setShowRegistrationModal(false);
+    setIsRegistered(true);
+    // Optionally refresh the page or update state
+    if (id) {
+      checkIfRegistered(Number(id));
+    }
   };
 
   if (loading) {
@@ -184,9 +216,9 @@ const HackathonDetails = () => {
                   <div className="text-4xl font-bold text-primary mb-2">
                     {typeof hackathon.prize_pool === 'number' 
                       ? `$${hackathon.prize_pool.toLocaleString()}` 
-                      : hackathon.prize_pool.toString().startsWith('$') 
-                        ? hackathon.prize_pool 
-                        : `$${hackathon.prize_pool}`}
+                      : hackathon.prize_pool.toString().replace(/₹/g, '').startsWith('$') 
+                        ? hackathon.prize_pool.toString().replace(/₹/g, '') 
+                        : `$${hackathon.prize_pool.toString().replace(/₹/g, '')}`}
                   </div>
                   <div className="text-sm text-muted-foreground">Total Prize Pool</div>
                 </div>
@@ -246,13 +278,15 @@ const HackathonDetails = () => {
                   size="lg" 
                   className="w-full md:w-auto bg-primary hover:bg-primary-glow text-primary-foreground glow-effect"
                   onClick={handleRegisterClick}
-                  disabled={isRegistered || checkingRegistration}
+                  disabled={isRegistered || checkingRegistration || !hackathonStatus.canRegister}
                 >
                   {checkingRegistration 
                     ? 'Checking...' 
                     : isRegistered 
                       ? 'Already Registered' 
-                      : 'Register Your Team'}
+                      : !hackathonStatus.canRegister
+                        ? 'Registration Closed'
+                        : 'Register Your Team'}
                 </Button>
               )}
               <Button size="lg" variant="outline" className="w-full md:w-auto glass-card" asChild>
@@ -372,6 +406,16 @@ const HackathonDetails = () => {
       </div>
       
       <Footer />
+      
+      {/* Team Registration Modal - Only shown when user is logged in and clicks Register */}
+      {hackathon && (
+        <TeamRegistrationModal
+          isOpen={showRegistrationModal}
+          onClose={() => setShowRegistrationModal(false)}
+          hackathon={hackathon}
+          onSuccess={handleRegistrationSuccess}
+        />
+      )}
     </div>
   );
 };

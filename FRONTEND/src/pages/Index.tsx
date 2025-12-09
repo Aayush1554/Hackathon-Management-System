@@ -222,9 +222,9 @@ const Index = () => {
                         <span className="text-2xl font-bold text-primary">
                           {typeof hackathon.prize_pool === 'number' 
                             ? `$${hackathon.prize_pool.toLocaleString()}` 
-                            : hackathon.prize_pool.toString().startsWith('$') 
-                              ? hackathon.prize_pool 
-                              : `$${hackathon.prize_pool}`}
+                            : hackathon.prize_pool.toString().replace(/₹/g, '').startsWith('$') 
+                              ? hackathon.prize_pool.toString().replace(/₹/g, '') 
+                              : `$${hackathon.prize_pool.toString().replace(/₹/g, '')}`}
                         </span>
                       )}
                     </div>
@@ -413,7 +413,7 @@ const Index = () => {
                 <div className="space-y-3">
                   <div className="bg-background/50 rounded-lg p-3 border border-blue-500/30">
                     <p className="text-sm font-medium">📝 Register Team</p>
-                    <p className="text-xs text-muted-foreground">Join with team code</p>
+                    <p className="text-xs text-muted-foreground">Register for Hackathons</p>
                   </div>
                   <div className="flex justify-center">
                     <ArrowRight className="w-5 h-5 text-blue-500 rotate-90" />
