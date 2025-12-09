@@ -10,7 +10,7 @@ Full-stack platform for managing hackathon events with real-time communication, 
 
 ### 🎥 Demo Video
 
-[![Watch Demo](https://drive.google.com/file/d/1s_3gkRAeMah5zVGnkb7nkhkbcVEqjxCU/view?usp=sharing)]
+[![Watch Demo] https://drive.google.com/file/d/1s_3gkRAeMah5zVGnkb7nkhkbcVEqjxCU/view?usp=sharing] 
 
 </div>
 
