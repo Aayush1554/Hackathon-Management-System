@@ -9,8 +9,7 @@
 Full-stack platform for managing hackathon events with real-time communication, team management, and automated workflows.
 
 ### 🎥 Demo Video
-
-[![Watch Demo] https://drive.google.com/file/d/1s_3gkRAeMah5zVGnkb7nkhkbcVEqjxCU/view?usp=sharing] 
+<a href="https://drive.google.com/file/d/1s_3gkRAeMah5zVGnkb7nkhkbcVEqjxCU/view?usp=sharing">Video</a>
 
 </div>
 
