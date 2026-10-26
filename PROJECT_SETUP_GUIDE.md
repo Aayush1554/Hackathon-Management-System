@@ -1,726 +1,634 @@
-# 🚀 HACKATHON MANAGEMENT SYSTEM - COMPLETE SETUP GUIDE
+# 🚀 Hackathon Management System — Project Setup Guide
 
-## 📋 PROJECT OVERVIEW
+This guide explains how to set up and run the **Hackathon Management System** locally.
 
-**Project Name:** Hackathon Management System (HMS)  
-**Type:** Full-stack Web Application  
-**Tech Stack:**
-- **Frontend:** React 18 + TypeScript + Vite
-- **Backend:** Node.js + Express.js
-- **Database:** MySQL (via XAMPP/phpMyAdmin)
-- **UI Framework:** Shadcn/UI + Tailwind CSS
-- **Authentication:** JWT (JSON Web Tokens)
+The project is a full-stack web application for managing hackathon events, teams, mentors, project submissions, evaluations, communication, and leaderboards.
 
 ---
 
-## 🏗️ HOW THIS PROJECT WAS BUILT FROM SCRATCH
+# 📋 Prerequisites
 
-### Phase 1: Project Planning & Setup
+Before starting, make sure the following software is installed:
 
-#### 1. Database Design
-- Designed 13 interconnected tables
-- Defined relationships (One-to-Many, Many-to-Many)
-- Created ER diagram with entities and cardinality
-- Wrote SQL schema with constraints and indexes
+### 1. Node.js
 
-#### 2. Backend Architecture
-```bash
-# Created Node.js project
-mkdir BACKEND
-cd BACKEND
-npm init -y
+Node.js **v16 or higher** is required.
 
-# Installed dependencies
-npm install express mysql2 dotenv cors bcryptjs jsonwebtoken express-validator multer morgan
-npm install --save-dev nodemon
-```
+Check your installed version:
 
-#### 3. Backend Structure Created
-```
-BACKEND/
-├── config/
-│   └── database.js          # MySQL connection pool
-├── controllers/
-│   ├── auth.controller.js   # Login/Register logic
-│   ├── hackathon.controller.js
-│   ├── team.controller.js
-│   └── mentor.controller.js
-├── middleware/
-│   ├── auth.middleware.js   # JWT verification
-│   └── upload.middleware.js # File upload handling
-├── models/
-│   ├── User.model.js        # User CRUD operations
-│   ├── Hackathon.model.js
-│   ├── Team.model.js
-│   └── Mentor.model.js
-├── routes/
-│   ├── auth.routes.js       # /api/auth/*
-│   ├── hackathon.routes.js  # /api/hackathons/*
-│   ├── team.routes.js       # /api/teams/*
-│   ├── mentor.routes.js     # /api/mentors/*
-│   └── admin.routes.js      # /api/admin/*
-├── uploads/                 # File storage
-│   ├── submissions/
-│   └── communications/
-└── server.js                # Entry point
-```
-
-#### 4. Frontend Setup
-```bash
-# Created Vite React TypeScript project
-npm create vite@latest FRONTEND -- --template react-ts
-cd FRONTEND
-
-# Installed Shadcn/UI
-npx shadcn-ui@latest init
-
-# Installed UI components
-npx shadcn-ui@latest add button card input dialog badge tooltip
-npx shadcn-ui@latest add table dropdown-menu select textarea
-
-# Installed other dependencies
-npm install axios react-router-dom lucide-react
-npm install @tanstack/react-query date-fns framer-motion
-```
-
-#### 5. Frontend Structure Created
-```
-FRONTEND/src/
-├── components/
-│   ├── Navbar.tsx           # Navigation bar
-│   ├── Footer.tsx           # Footer component
-│   ├── ChatInterface.tsx    # WhatsApp-style chat
-│   ├── TeamRegistrationModal.tsx
-│   ├── SubmissionModal.tsx
-│   └── ui/                  # Shadcn components
-├── contexts/
-│   └── AuthContext.tsx      # Global auth state
-├── pages/
-│   ├── Index.tsx            # Homepage
-│   ├── Hackathons.tsx       # Browse hackathons
-│   ├── HackathonDetails.tsx # Hackathon info
-│   ├── TeamDashboard.tsx    # Team portal
-│   ├── MentorDashboard.tsx  # Mentor portal
-│   ├── AdminDashboard.tsx   # Admin portal
-│   └── AboutUs.tsx          # About page
-├── lib/
-│   ├── api.ts               # Axios instance
-│   └── utils.ts             # Helper functions
-└── main.tsx                 # Entry point
-```
-
-### Phase 2: Feature Implementation Timeline
-
-#### Week 1-2: Core Authentication
-- ✅ User registration with bcrypt password hashing
-- ✅ JWT-based login system
-- ✅ Role-based access (admin/mentor/team_member)
-- ✅ Protected routes on frontend
-- ✅ Auth context for global state
-
-#### Week 3-4: Hackathon Management
-- ✅ Admin: Create/Edit/Delete hackathons
-- ✅ Display hackathons with filters
-- ✅ Registration date validation
-- ✅ Status management (draft, open, in_progress, etc.)
-- ✅ Prize pool breakdown display
-
-#### Week 5-6: Team System
-- ✅ Team registration with unique codes
-- ✅ Join team using code
-- ✅ Team dashboard with hackathon info
-- ✅ Team member management
-- ✅ Project submission (GitHub, demo, files)
-
-#### Week 7-8: Scoring & Leaderboard
-- ✅ Admin: Assign scores to teams
-- ✅ Dynamic leaderboard with real-time updates
-- ✅ Score finalization feature
-- ✅ Visual indicators (trophy for final, info for current)
-- ✅ Rank calculation
-
-#### Week 9-10: Mentor System
-- ✅ Mentor-to-team assignment (1 team = 1 mentor)
-- ✅ WhatsApp-style chat interface
-- ✅ File sharing in chat
-- ✅ Meeting scheduler with Google Meet/Zoom
-- ✅ Mentor dashboard with assigned teams
-
-#### Week 11-12: Advanced Chat Features
-- ✅ Real-time messaging (3-second polling)
-- ✅ Emoji reactions (8 quick emojis)
-- ✅ Toggle reactions (click to remove)
-- ✅ Delete for me functionality
-- ✅ Delete for everyone (sender only, 1-hour limit)
-- ✅ Session-based authentication (tab-isolated)
-
-#### Week 13-14: Polish & Refinement
-- ✅ Dark theme UI consistency
-- ✅ Glass-card effects
-- ✅ Responsive design
-- ✅ Error handling
-- ✅ Loading states
-- ✅ Toast notifications
-- ✅ Comprehensive filtering system
-
-### Phase 3: Key Technical Decisions
-
-#### Why These Technologies?
-
-**React + TypeScript:**
-- Type safety prevents runtime errors
-- Better IDE autocomplete
-- Scalable codebase
-
-**Vite:**
-- Lightning-fast dev server
-- Instant HMR (Hot Module Replacement)
-- Optimized production builds
-
-**Shadcn/UI:**
-- Copy-paste components (no npm package bloat)
-- Full customization control
-- Accessible by default (ARIA)
-
-**MySQL:**
-- Relational data (teams, hackathons, users)
-- Strong ACID guarantees
-- Good for complex queries (JOINs)
-
-**JWT:**
-- Stateless authentication
-- Easy to scale horizontally
-- Works well with React
-
----
-
-## 🖥️ RUNNING PROJECT ON ANOTHER MACHINE - STEP BY STEP
-
-### Prerequisites Installation
-
-#### Step 1: Install Node.js
-1. Go to https://nodejs.org/
-2. Download LTS version (v20.x or higher)
-3. Run installer, click "Next" through all steps
-4. Verify installation:
 ```bash
 node --version
+```
+
+Check npm:
+
+```bash
 npm --version
 ```
 
-#### Step 2: Install XAMPP (MySQL + phpMyAdmin)
-1. Go to https://www.apachefriends.org/
-2. Download XAMPP for Windows
-3. Install to `C:\xampp`
-4. Start XAMPP Control Panel
-5. Start **Apache** and **MySQL** services
+---
 
-#### Step 3: Install Git (Optional, for cloning)
-1. Go to https://git-scm.com/
-2. Download and install Git
-3. Verify: `git --version`
+### 2. MySQL
 
-### Database Setup
+The project uses **MySQL 8.0+**.
 
-#### Step 1: Create Database
-1. Open browser: http://localhost/phpmyadmin
-2. Click "New" in sidebar
-3. Database name: `hackathon`
-4. Collation: `utf8mb4_unicode_ci`
-5. Click "Create"
+You can use **XAMPP** to run MySQL locally.
 
-#### Step 2: Import Schema
-1. Select `hackathon` database
-2. Click "Import" tab
-3. Click "Choose File"
-4. Navigate to: `hms/database/hackathon_schema.sql`
-5. Click "Go" button
-6. Wait for "Import has been successfully finished"
+After installing XAMPP:
 
-#### Step 3: Import Mentor Tables
-1. Still in Import tab
-2. Choose `database/mentor_tables.sql`
-3. Click "Go"
-4. Choose `database/add_leaderboard_final.sql`
-5. Click "Go"
-6. Choose `database/add_project_zip_column.sql`
-7. Click "Go"
+1. Open XAMPP Control Panel.
+2. Start **MySQL**.
+3. Apache is optional for this project unless you specifically need it for another purpose.
+4. Open phpMyAdmin from XAMPP.
 
-#### Step 4: Verify Tables
-1. Click `hackathon` database in sidebar
-2. You should see 13 tables:
-   - users
-   - hackathons
-   - teams
-   - team_members
-   - mentor_team_assignments
-   - scheduled_meetings
-   - team_mentor_communications
-   - submissions
-   - evaluations
-   - announcements
-   - notifications
-   - activity_logs
-   - mentors_hackathons
+---
 
-#### Step 5: Verify Default Admin
-1. Click on `users` table
-2. Click "Browse" tab
-3. You should see admin user:
-   - Email: `admin@hackplatform.com`
-   - Password: `admin123` (hashed)
-   - User Type: `admin`
+### 3. Git
 
-### Backend Setup
+Git is required to clone the repository.
 
-#### Step 1: Navigate to Backend
+Check Git:
+
 ```bash
-cd hms/BACKEND
+git --version
 ```
 
-#### Step 2: Install Dependencies
+---
+
+# 📥 1. Clone the Repository
+
+Clone the project from GitHub:
+
+```bash
+git clone https://github.com/Aayush1554/Hackathon-Management-System.git
+```
+
+Enter the project directory:
+
+```bash
+cd Hackathon-Management-System
+```
+
+---
+
+# 🗄️ 2. Database Setup
+
+The application uses a MySQL database named:
+
+```text
+hackathon
+```
+
+## Step 1 — Start MySQL
+
+Open **XAMPP Control Panel** and start:
+
+```text
+MySQL
+```
+
+---
+
+## Step 2 — Open phpMyAdmin
+
+Open:
+
+```text
+http://localhost/phpmyadmin
+```
+
+---
+
+## Step 3 — Create the Database
+
+Create a new database named:
+
+```text
+hackathon
+```
+
+---
+
+## Step 4 — Import SQL Files
+
+The SQL files must be imported in the following order:
+
+```text
+1. database/hackathon_schema.sql
+2. database/mentor_tables.sql
+3. database/add_leaderboard_final.sql
+4. database/add_project_zip_column.sql
+5. database/add_message_delete.sql
+```
+
+### Important
+
+The order matters because the later SQL files modify or extend the database structure created by the earlier files.
+
+After importing all files, verify that the database contains the required tables.
+
+---
+
+# 💻 3. Backend Setup
+
+Open a terminal in the project directory.
+
+Enter the backend folder:
+
+```bash
+cd BACKEND
+```
+
+Install dependencies:
+
 ```bash
 npm install
 ```
 
-This installs:
-- express (web framework)
-- mysql2 (database driver)
-- cors (cross-origin requests)
-- bcryptjs (password hashing)
-- jsonwebtoken (JWT auth)
-- multer (file uploads)
-- dotenv (environment variables)
+---
 
-#### Step 3: Create .env File
-Create file: `BACKEND/.env`
+## 🔐 Backend Environment Variables
+
+Create a file named:
+
+```text
+.env
+```
+
+inside the `BACKEND` folder.
+
+Example configuration:
 
 ```env
-# Database Configuration
+NODE_ENV=development
+PORT=5000
+
 DB_HOST=localhost
 DB_USER=root
 DB_PASSWORD=
 DB_NAME=hackathon
 DB_PORT=3306
 
-# Server Configuration
-PORT=5000
-NODE_ENV=development
+JWT_SECRET=your-super-secret-jwt-key-change-this-in-production
+JWT_EXPIRY=24h
 
-# JWT Secret (change this to random string)
-JWT_SECRET=your_super_secret_jwt_key_change_this_in_production
+FRONTEND_URL=http://localhost:8080
 
-# JWT Expiry
-JWT_EXPIRE=7d
+UPLOAD_PATH=./uploads
+MAX_FILE_SIZE=10485760
 ```
 
-**Important:** Change `JWT_SECRET` to a random string!
+### ⚠️ Important
 
-#### Step 4: Test Database Connection
-```bash
-node -e "require('./config/database')"
-```
+Do **not** upload your actual `.env` file to GitHub.
 
-Expected output:
-```
-✓ Database connected successfully
-```
+The `.env` file may contain:
 
-#### Step 5: Start Backend Server
-```bash
-npm start
-```
+- Database credentials
+- JWT secrets
+- Other private configuration
 
-Expected output:
-```
-✓ Database connected successfully
-✓ Server running on http://localhost:5000
-```
+Use `.env.example` as the template for other developers.
 
-**Keep this terminal open!**
+---
 
-### Frontend Setup
+# ▶️ 4. Start the Backend
 
-#### Step 1: Open New Terminal
-Open a **NEW** terminal window (don't close backend)
+From the `BACKEND` directory:
 
-#### Step 2: Navigate to Frontend
-```bash
-cd hms/FRONTEND
-```
-
-#### Step 3: Install Dependencies
-```bash
-npm install
-```
-
-This installs:
-- react, react-dom
-- vite (build tool)
-- typescript
-- tailwindcss (styling)
-- @radix-ui/* (Shadcn components)
-- axios (HTTP client)
-- react-router-dom (routing)
-- lucide-react (icons)
-
-**Note:** This may take 2-5 minutes!
-
-#### Step 4: Start Frontend Dev Server
 ```bash
 npm run dev
 ```
 
-Expected output:
-```
-  VITE v5.x.x  ready in 500 ms
+The backend should start on:
 
-  ➜  Local:   http://localhost:8080/
-  ➜  Network: use --host to expose
+```text
+http://localhost:5000
 ```
 
-#### Step 5: Open in Browser
-1. Open browser
-2. Go to: http://localhost:8080
-3. You should see the homepage!
-
-### Testing the Application
-
-#### Test 1: Admin Login
-1. Click "Admin Login" in navbar
-2. Email: `admin@hackplatform.com`
-3. Password: `admin123`
-4. Click "Login"
-5. Should redirect to Admin Dashboard
-
-#### Test 2: Create Hackathon
-1. In Admin Dashboard, click "Create Hackathon"
-2. Fill all required fields
-3. For offline hackathons: Uncheck "Online Hackathon" and enter location/address
-4. Click "Create"
-5. Should see new hackathon in list with location displayed for offline events
-
-#### Test 3: Register as Team
-1. Logout from admin
-2. Click "Register" → "Team Member"
-3. Fill registration form
-4. Login with new credentials
-5. Browse hackathons
-6. Register for a hackathon
-
-#### Test 4: Mentor Features
-1. In Admin Dashboard, click "Mentor Management"
-2. Assign a mentor to a team
-3. Login as mentor
-4. View assigned teams
-5. Test chat feature
-6. Schedule a meeting
+Keep this terminal running.
 
 ---
 
-## 🔧 TROUBLESHOOTING COMMON ISSUES
+# 🌐 5. Frontend Setup
 
-### Issue 1: "Cannot GET /"
-**Cause:** Backend not running  
-**Fix:** 
+Open a **new terminal** while keeping the backend running.
+
+From the project root:
+
 ```bash
-cd BACKEND
-npm start
-```
-
-### Issue 2: "ECONNREFUSED localhost:5000"
-**Cause:** Frontend can't reach backend  
-**Fix:** 
-1. Check backend is running on port 5000
-2. Check CORS is enabled in server.js
-
-### Issue 3: "Access denied for user 'root'@'localhost'"
-**Cause:** Wrong database password  
-**Fix:** 
-1. Open XAMPP
-2. Check MySQL password
-3. Update `BACKEND/.env` with correct password
-
-### Issue 4: "Table 'hackathon.users' doesn't exist"
-**Cause:** Database not imported  
-**Fix:** Re-import `hackathon_schema.sql` in phpMyAdmin
-
-### Issue 5: "Module not found"
-**Cause:** Dependencies not installed  
-**Fix:**
-```bash
-# Backend
-cd BACKEND
-rm -rf node_modules
-npm install
-
-# Frontend
 cd FRONTEND
-rm -rf node_modules
+```
+
+Install frontend dependencies:
+
+```bash
 npm install
 ```
 
-### Issue 6: "Port 5000 already in use"
-**Cause:** Another app using port 5000  
-**Fix:**
-1. Edit `BACKEND/.env`
-2. Change `PORT=5000` to `PORT=5001`
-3. Update `FRONTEND/src/lib/api.ts` baseURL to match
+Start the frontend:
 
-### Issue 7: "Login not working"
-**Cause:** JWT secret mismatch or password issue  
-**Fix:**
 ```bash
-cd BACKEND
-node update-admin-password.js
+npm run dev
+```
+
+The frontend should be available at:
+
+```text
+http://localhost:8080
 ```
 
 ---
 
-## 📂 FOLDER STRUCTURE EXPLAINED
+# 🔑 6. Admin Account
 
+The project contains a script for creating the administrator account.
+
+From the `BACKEND` folder:
+
+```bash
+node create-admin.js
 ```
-hms/
-├── BACKEND/                 # Node.js API server
-│   ├── config/             # Database connection
-│   ├── controllers/        # Business logic
-│   ├── middleware/         # Auth, upload handlers
-│   ├── models/            # Database queries
-│   ├── routes/            # API endpoints
-│   ├── uploads/           # Uploaded files
-│   ├── .env               # Environment variables
-│   ├── package.json       # Backend dependencies
-│   └── server.js          # Entry point
+
+The script creates or updates the admin account.
+
+Use the credentials configured by the script when logging into the administrator dashboard.
+
+> For security, do not publish real production credentials in this repository.
+
+---
+
+# 👥 7. Test Users
+
+The project also includes a script for creating test users.
+
+From:
+
+```text
+BACKEND
+```
+
+run:
+
+```bash
+node create-10-test-users.js
+```
+
+This creates 10 test team-member accounts.
+
+The generated accounts follow this pattern:
+
+```text
+user1@gmail.com
+user2@gmail.com
+user3@gmail.com
+...
+user10@gmail.com
+```
+
+The passwords follow the pattern:
+
+```text
+user1user1
+user2user2
+user3user3
+...
+user10user10
+```
+
+These accounts are intended for development/testing.
+
+---
+
+# 🏆 8. Hackathon Test Data
+
+The project also contains a script for creating sample hackathons.
+
+From the `BACKEND` directory:
+
+```bash
+node create-9-hackathons.js
+```
+
+This creates sample hackathon data for testing the application.
+
+---
+
+# 🌐 9. Access the Application
+
+Once both frontend and backend servers are running, open:
+
+```text
+http://localhost:8080
+```
+
+---
+
+# 👨‍💼 10. Admin Workflow
+
+The administrator can:
+
+```text
+Login
+  ↓
+Create Hackathon
+  ↓
+Configure Dates & Prizes
+  ↓
+Assign Mentors
+  ↓
+Monitor Teams
+  ↓
+Monitor Submissions
+  ↓
+Manage Evaluations
+  ↓
+Finalize Leaderboard
+```
+
+---
+
+# 👨‍🏫 11. Mentor Workflow
+
+Mentors can:
+
+```text
+Login
+  ↓
+View Assigned Teams
+  ↓
+Track Team Progress
+  ↓
+Communicate with Teams
+  ↓
+React to Messages
+  ↓
+Schedule Meetings
+  ↓
+Support Teams
+```
+
+---
+
+# 👥 12. Team Workflow
+
+Team members can:
+
+```text
+Register / Login
+      ↓
+Browse Hackathons
+      ↓
+Register for Hackathon
+      ↓
+Create or Join Team
+      ↓
+Work on Project
+      ↓
+Submit Project
+      ↓
+Communicate with Mentor
+      ↓
+View Leaderboard
+```
+
+---
+
+# 💬 13. Real-Time Communication
+
+The application uses **Socket.io** for real-time mentor-team communication.
+
+Features include:
+
+- Instant messaging
+- Real-time message updates
+- Emoji reactions
+- Message editing
+- Message deletion
+- Team/mentor communication rooms
+
+The backend uses room-based communication for individual team-mentor conversations.
+
+Example room structure:
+
+```text
+team_{id}_mentor_{id}
+```
+
+---
+
+# 📁 14. Project Structure
+
+The major project structure is:
+
+```text
+Hackathon-Management-System/
 │
-├── FRONTEND/              # React TypeScript app
-│   ├── public/           # Static assets
+├── BACKEND/
+│   ├── config/
+│   ├── controllers/
+│   ├── middleware/
+│   ├── routes/
+│   ├── uploads/
+│   ├── .env.example
+│   ├── create-admin.js
+│   ├── create-10-test-users.js
+│   ├── create-9-hackathons.js
+│   ├── package.json
+│   └── ...
+│
+├── FRONTEND/
+│   ├── public/
 │   ├── src/
-│   │   ├── components/   # Reusable components
-│   │   ├── contexts/     # Global state
-│   │   ├── hooks/        # Custom hooks
-│   │   ├── lib/          # Utilities
-│   │   ├── pages/        # Route pages
-│   │   ├── App.tsx       # Root component
-│   │   └── main.tsx      # Entry point
-│   ├── package.json      # Frontend dependencies
-│   └── vite.config.ts    # Vite configuration
+│   ├── package.json
+│   └── ...
 │
-├── database/             # SQL files
+├── database/
 │   ├── hackathon_schema.sql
 │   ├── mentor_tables.sql
-│   └── add_*.sql        # Migrations
+│   ├── add_leaderboard_final.sql
+│   ├── add_project_zip_column.sql
+│   └── add_message_delete.sql
 │
-├── DATABASE.md          # Database documentation
-└── README.md           # This file
+├── DATABASE.md
+├── PROJECT_SETUP_GUIDE.md
+├── SOCKET_IO_IMPLEMENTATION.md
+└── README.md
 ```
 
 ---
 
-## 🎯 ADMIN CREDENTIALS & PASSWORD MANAGEMENT
+# 🐛 15. Troubleshooting
 
-### Default Admin Credentials
-- **Email:** `admin@hackplatform.com`
-- **Password:** `admin123`
-- **Fixed or Changeable:** ✅ CHANGEABLE
+## Database Connection Error
 
-### How to Change Admin Password
+Check that MySQL is running in XAMPP.
 
-#### Method 1: Using Backend Script (Easiest)
-```bash
-cd BACKEND
-node update-admin-password.js
-```
+Verify the `.env` configuration:
 
-To use custom password:
-1. Open `update-admin-password.js` in editor
-2. Change line:
-```javascript
-const password = 'admin123'; // Change this
-```
-3. Save and run:
-```bash
-node update-admin-password.js
-```
-
-#### Method 2: Via SQL (phpMyAdmin)
-1. Go to http://localhost/phpmyadmin
-2. Select `hackathon` database
-3. Click `users` table
-4. Click "Browse"
-5. Click "Edit" (pencil icon) for admin user
-6. Generate hash at: https://bcrypt-generator.com/
-7. Enter your password, select rounds: 10
-8. Copy generated hash
-9. Paste in `password_hash` field
-10. Click "Go"
-
-#### Method 3: Create New Admin User
-```sql
--- Generate hash at https://bcrypt-generator.com/ first
-INSERT INTO users (email, password_hash, full_name, user_type) 
-VALUES (
-  'newadmin@example.com',
-  '$2y$10$YourHashHere',
-  'Your Name',
-  'admin'
-);
-```
-
-### Create Additional Admins
-```bash
-cd BACKEND
-node -e "
-const bcrypt = require('bcryptjs');
-const db = require('./config/database');
-(async () => {
-  const hash = await bcrypt.hash('password123', 10);
-  const [result] = await db.query(
-    'INSERT INTO users (email, password_hash, full_name, user_type) VALUES (?, ?, ?, ?)',
-    ['admin2@example.com', hash, 'Second Admin', 'admin']
-  );
-  console.log('Admin created!');
-  process.exit(0);
-})();
-"
-```
-
----
-
-## 🌐 DEPLOYMENT CONSIDERATIONS
-
-### Environment Variables (Production)
 ```env
-# Production .env
-DB_HOST=your-mysql-host.com
-DB_USER=hackathon_user
-DB_PASSWORD=strong_random_password
+DB_HOST=localhost
+DB_USER=root
+DB_PASSWORD=
 DB_NAME=hackathon
 DB_PORT=3306
-
-PORT=5000
-NODE_ENV=production
-
-JWT_SECRET=very_long_random_string_min_32_chars
-JWT_EXPIRE=7d
-
-# Optional
-CORS_ORIGIN=https://yourdomain.com
 ```
 
-### Build Frontend for Production
+---
+
+## Port 5000 Already in Use
+
+Check which process is using port 5000:
+
 ```bash
-cd FRONTEND
-npm run build
+netstat -ano | findstr :5000
 ```
 
-This creates `FRONTEND/dist/` folder with optimized files.
+Then terminate the process if required:
 
-### Run Backend in Production
+```bash
+taskkill /PID <PID> /F
+```
+
+Alternatively, change the backend `PORT` in `.env`.
+
+---
+
+## Port 8080 Already in Use
+
+Check the process:
+
+```bash
+netstat -ano | findstr :8080
+```
+
+Then terminate it if necessary:
+
+```bash
+taskkill /PID <PID> /F
+```
+
+---
+
+## Socket.io Not Working
+
+Check:
+
+1. Backend is running.
+2. Frontend is running.
+3. `FRONTEND_URL` is correctly configured.
+4. Browser console for Socket.io errors.
+5. CORS configuration.
+
+---
+
+## Upload Problems
+
+Check that the backend upload directory exists:
+
+```text
+BACKEND/uploads/
+```
+
+Also check file-size limits and permissions.
+
+---
+
+## npm Installation Problems
+
+Try:
+
+```bash
+npm cache clean --force
+```
+
+Then remove:
+
+```text
+node_modules
+```
+
+and reinstall:
+
+```bash
+npm install
+```
+
+---
+
+# 🔄 16. Restarting the Project
+
+Whenever you want to run the project again:
+
+### Terminal 1 — Backend
+
 ```bash
 cd BACKEND
-NODE_ENV=production npm start
+npm run dev
 ```
 
-Or use PM2:
+### Terminal 2 — Frontend
+
 ```bash
-npm install -g pm2
-pm2 start server.js --name hackathon-api
-pm2 save
-pm2 startup
+cd FRONTEND
+npm run dev
 ```
 
----
+Then open:
 
-## 📊 API ENDPOINTS OVERVIEW
+```text
+http://localhost:8080
+```
 
-### Authentication
-- `POST /api/auth/register` - Register new user
-- `POST /api/auth/login` - Login user
-- `GET /api/auth/me` - Get current user
-
-### Hackathons
-- `GET /api/hackathons` - List all hackathons
-- `GET /api/hackathons/:id` - Get hackathon details
-- `POST /api/admin/hackathons` - Create hackathon (admin)
-- `PUT /api/admin/hackathons/:id` - Update hackathon (admin)
-- `DELETE /api/admin/hackathons/:id` - Delete hackathon (admin)
-
-### Teams
-- `POST /api/teams/register` - Register team for hackathon
-- `POST /api/teams/join` - Join team with code
-- `GET /api/teams/my-teams` - Get user's teams
-- `POST /api/teams/:id/submit` - Submit project
-- `PUT /api/admin/teams/:id/score` - Assign score (admin)
-
-### Mentors
-- `GET /api/mentors/teams` - Get assigned teams (mentor)
-- `POST /api/admin/mentors/assign` - Assign mentor to team (admin)
-- `POST /api/mentors/schedule-meeting` - Schedule meeting
-- `POST /api/mentors/send-message` - Send chat message
-- `GET /api/mentors/messages/:teamId` - Get chat history
+Make sure MySQL is also running in XAMPP.
 
 ---
 
-## 🎓 LEARNING RESOURCES
+# 🔒 17. Security Notes
 
-### Technologies Used
-- **React:** https://react.dev/learn
-- **TypeScript:** https://www.typescriptlang.org/docs/
-- **Node.js:** https://nodejs.org/docs/
-- **Express:** https://expressjs.com/
-- **MySQL:** https://dev.mysql.com/doc/
-- **JWT:** https://jwt.io/introduction
-- **Shadcn/UI:** https://ui.shadcn.com/
+For development:
 
-### Project Architecture
-- **MVC Pattern:** Model-View-Controller separation
-- **RESTful API:** Standard HTTP methods (GET, POST, PUT, DELETE)
-- **JWT Authentication:** Stateless token-based auth
-- **Role-Based Access:** Different permissions per user type
+- Use a local `.env` file.
+- Never commit `.env`.
+- Never publish database passwords.
+- Never publish JWT secrets.
+- Change default/test passwords before production deployment.
+- Do not use development credentials in a production environment.
 
 ---
 
-## ✅ FINAL CHECKLIST
+# 📚 18. Additional Documentation
 
-Before running on new machine:
+The repository also contains:
 
-- [ ] Node.js installed (v16+)
-- [ ] XAMPP installed and MySQL running
-- [ ] Database `hackathon` created
-- [ ] All SQL migrations imported in order:
-  - [ ] hackathon_schema.sql
-  - [ ] mentor_tables.sql
-  - [ ] add_leaderboard_final.sql
-  - [ ] add_project_zip_column.sql
-  - [ ] add_message_delete.sql
-- [ ] Backend .env file created (optional, has defaults)
-- [ ] Backend dependencies installed (`npm install`)
-- [ ] Backend server running (port 5000)
-- [ ] Frontend dependencies installed (`npm install`)
-- [ ] Frontend server running (port 5173)
-- [ ] Can access http://localhost:5173
-- [ ] Can login as admin (admin@hackplatform.com / admin123)
-- [ ] Chat features working (reactions, delete)
-- [ ] File uploads working (submissions, communications)
+### `DATABASE.md`
+
+Contains the database structure, relationships, tables, and database setup information.
+
+### `SOCKET_IO_IMPLEMENTATION.md`
+
+Contains information about the real-time communication implementation using Socket.io.
+
+### `README.md`
+
+Contains the project overview, features, technology stack, installation summary, and usage information.
 
 ---
 
-## 🎉 SUCCESS!
+# 👨‍💻 Author
 
-If you reached this point, your Hackathon Management System is fully operational!
+**Aayush Hudda**
 
-**Next Steps:**
-1. Create your first hackathon
-2. Register some test teams
-3. Assign mentors
-4. Test chat and meetings
-5. Submit projects
-6. Assign scores
-7. Finalize leaderboard
+📧 Email: aayush154837@gmail.com
 
-**Support:**
-- GitHub: https://github.com/abhim-5
-- LinkedIn: https://www.linkedin.com/in/abhimanyu-kumar5/
-- Email: kumarabhi9589@gmail.com
+🔗 GitHub: https://github.com/Aayush1554
 
-Happy Hacking! 🚀
+🔗 LinkedIn: https://www.linkedin.com/in/aayush-hudda-714591328/
+
+---
+
+# ⭐ Project
+
+**Hackathon Management System**
+
+A full-stack platform designed to manage the complete hackathon lifecycle, including event creation, team registration, mentoring, communication, project submissions, evaluations, and leaderboard management.

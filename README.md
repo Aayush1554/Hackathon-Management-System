@@ -5,11 +5,12 @@
 ![Node.js](https://img.shields.io/badge/Node.js-v16+-339933?style=flat&logo=node.js&logoColor=white)
 ![React](https://img.shields.io/badge/React-18-61DAFB?style=flat&logo=react&logoColor=black)
 ![MySQL](https://img.shields.io/badge/MySQL-8.0-4479A1?style=flat&logo=mysql&logoColor=white)
+![TypeScript](https://img.shields.io/badge/TypeScript-5+-3178C6?style=flat&logo=typescript&logoColor=white)
+![Socket.io](https://img.shields.io/badge/Socket.io-Real--Time-black?style=flat&logo=socket.io&logoColor=white)
 
-Full-stack platform for managing hackathon events with real-time communication, team management, and automated workflows.
+**A full-stack platform for managing the complete hackathon lifecycle.**
 
-### 🎥 Demo Video
-<a href="https://drive.google.com/file/d/1s_3gkRAeMah5zVGnkb7nkhkbcVEqjxCU/view?usp=sharing">Video</a>
+Event creation • Team management • Mentorship • Real-time communication • Project submissions • Evaluations • Leaderboards
 
 </div>
 
@@ -17,96 +18,201 @@ Full-stack platform for managing hackathon events with real-time communication, 
 
 ## 📖 About
 
-Complete web solution for managing hackathon lifecycle - event creation, team registration, real-time mentorship, project submissions, and leaderboard management.
+**Hackathon Management System** is a full-stack web application designed to simplify and manage the complete hackathon lifecycle from a centralized platform.
+
+It provides separate workflows for **Administrators, Mentors, and Teams**, allowing organizers to create hackathons, manage participants, assign mentors, monitor submissions, communicate in real time, and finalize leaderboards.
 
 ---
 
 ## ✨ Features
 
-**👨‍💼 Admins:** Create hackathons • Set deadlines • Configure prizes • Assign mentors • Monitor submissions • Finalize leaderboards
+### 👨‍💼 Admin
 
-**👨‍🏫 Mentors:** View teams • Real-time chat • Emoji reactions • Schedule meetings • Track progress
+- Create, edit, and manage hackathons
+- Configure hackathon dates and deadlines
+- Configure prizes
+- Create and manage mentors
+- Assign mentors to teams
+- View registered teams
+- Monitor project submissions
+- Manage evaluations
+- View and finalize leaderboards
+- Search and filter hackathons
 
-**👥 Teams:** Browse hackathons • Register teams • Submit projects • Chat with mentors • View rankings
+### 👨‍🏫 Mentor
+
+- View assigned teams
+- Track team progress
+- Communicate with teams
+- Real-time chat
+- Emoji reactions
+- Edit and delete messages
+- Schedule meetings
+- Upload resources and files
+
+### 👥 Teams
+
+- Browse available hackathons
+- Register for hackathons
+- Create or join teams
+- Submit projects
+- Upload project files
+- Communicate with assigned mentors
+- View scheduled meetings
+- Track submission status
+- View leaderboard rankings
+
+### 💬 Real-Time Communication
+
+- Real-time mentor-team messaging
+- File attachments
+- Emoji reactions
+- Message editing
+- Delete for me
+- Delete for everyone
+- Reaction toggling
+- Team/mentor-specific communication rooms
 
 ---
 
 ## 🛠️ Tech Stack
 
-**Frontend:** React 18 + TypeScript + Vite • Tailwind CSS • Shadcn/UI • Socket.io-client
+### Frontend
 
-**Backend:** Node.js + Express • Socket.io • JWT • Bcrypt • Multer
+- React 18
+- TypeScript
+- Vite
+- Tailwind CSS
+- shadcn/ui
+- React Router
+- Axios
+- Socket.io-client
 
-**Database:** MySQL 8.0 • 13 tables • Foreign keys • InnoDB
+### Backend
+
+- Node.js
+- Express.js
+- Socket.io
+- JWT Authentication
+- bcryptjs
+- Multer
+- CORS
+- dotenv
+
+### Database
+
+- MySQL 8.0+
+- InnoDB
+- Foreign Key Relationships
+- Relational Database Design
+
+---
+
+## 🏗️ Architecture
+
+```text
+                    ┌─────────────────────┐
+                    │      React UI       │
+                    │   TypeScript/Vite   │
+                    └──────────┬──────────┘
+                               │
+                         REST API / Socket.io
+                               │
+                    ┌──────────▼──────────┐
+                    │   Node.js + Express │
+                    │      Backend        │
+                    └──────────┬──────────┘
+                               │
+                         MySQL Connection
+                               │
+                    ┌──────────▼──────────┐
+                    │    MySQL Database   │
+                    │      hackathon      │
+                    └─────────────────────┘
+```
 
 ---
 
 ## 📋 Prerequisites
 
-- Node.js v16+ ([Download](https://nodejs.org/))
-- MySQL 8.0+ ([XAMPP](https://www.apachefriends.org/))
-- Git ([Download](https://git-scm.com/))
+Before running the project, install:
+
+- **Node.js v16+**
+- **MySQL 8.0+**
+- **Git**
+
+For Windows, **XAMPP** can be used to run MySQL locally.
 
 ---
 
 ## 🚀 Installation
 
-### Step 1: Clone Repository
+### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/abhim-5/Hackathon-Management-System.git
+git clone https://github.com/Aayush1554/Hackathon-Management-System.git
 cd Hackathon-Management-System
 ```
 
-### Step 2: Database Setup
+### 2. Setup Database
 
-1. **Start XAMPP** → Apache & MySQL
-2. **Open** [phpMyAdmin](http://localhost/phpmyadmin)
-3. **Create database:** `hackathon`
-4. **Import SQL files in order** (SQL tab):
-   ```
-   1. database/hackathon_schema.sql
-   2. database/mentor_tables.sql
-   3. database/add_leaderboard_final.sql
-   4. database/add_project_zip_column.sql
-   5. database/add_message_delete.sql
-   ```
-5. **Verify:** 13 tables created
+Start MySQL through XAMPP and open:
 
-**Alternative (Command Line):**
-```bash
-mysql -u root -p -e "CREATE DATABASE hackathon;"
-mysql -u root -p hackathon < database/hackathon_schema.sql
-mysql -u root -p hackathon < database/mentor_tables.sql
-mysql -u root -p hackathon < database/add_leaderboard_final.sql
-mysql -u root -p hackathon < database/add_project_zip_column.sql
-mysql -u root -p hackathon < database/add_message_delete.sql
+```text
+http://localhost/phpmyadmin
 ```
 
-### Step 3: Backend Setup
+Create a database named:
+
+```text
+hackathon
+```
+
+Import the SQL files in this order:
+
+```text
+database/hackathon_schema.sql
+database/mentor_tables.sql
+database/add_leaderboard_final.sql
+database/add_project_zip_column.sql
+database/add_message_delete.sql
+```
+
+### 3. Setup Backend
 
 ```bash
 cd BACKEND
 npm install
-npm run dev
 ```
 
-**Optional `.env`** (BACKEND folder):
+Create a `.env` file:
+
 ```env
 PORT=5000
 DB_HOST=localhost
 DB_USER=root
 DB_PASSWORD=
 DB_NAME=hackathon
+DB_PORT=3306
 JWT_SECRET=your_secret_key
-FRONTEND_URL=http://localhost:8080
+FRONTEND_URL=http://localhost:5173
 ```
 
-Backend: `http://localhost:5000`
+Start the backend:
 
-### Step 4: Frontend Setup
+```bash
+npm run dev
+```
 
-Open new terminal:
+Backend:
+
+```text
+http://localhost:5000
+```
+
+### 4. Setup Frontend
+
+Open a new terminal:
 
 ```bash
 cd FRONTEND
@@ -114,98 +220,309 @@ npm install
 npm run dev
 ```
 
-Frontend: `http://localhost:8080`
+Frontend:
+
+```text
+http://localhost:5173
+```
+
+For detailed installation instructions, see:
+
+**[PROJECT_SETUP_GUIDE.md](PROJECT_SETUP_GUIDE.md)**
+
+For the fastest setup, see:
+
+**[QUICK_START_GUIDE.md](QUICK_START_GUIDE.md)**
 
 ---
 
-## 🎮 Usage
+## 🔐 Admin Account
 
-### Access Application
-```
-http://localhost:8080
-```
+Create the administrator account using the provided script:
 
-### Create Admin Account
 ```bash
 cd BACKEND
 node create-admin.js
 ```
-**Login:** `admin@hackathon.com` / `Admin@123`
 
-### Create Test Data (Optional)
+The script creates or updates the administrator account and displays the login credentials in the terminal.
+
+> **Security:** Do not commit real credentials, passwords, JWT secrets, or `.env` files to the repository.
+
+---
+
+## 🧪 Test Data
+
+Optional scripts are available for development and testing.
+
+### Create Test Users
+
 ```bash
-node create-10-test-users.js    # Creates sample users
-node create-9-hackathons.js      # Creates sample hackathons
+cd BACKEND
+node create-10-test-users.js
 ```
 
-### Workflows
+### Create Sample Hackathons
 
-**Admin:** Login → Create Hackathon → Set Dates/Prizes → Assign Mentors → Monitor → Finalize Leaderboard
+```bash
+node create-9-hackathons.js
+```
 
-**Team:** Register → Browse → Form Team → Submit Project → Chat with Mentor → View Ranking
-
-**Mentor:** Login → View Teams → Chat → Schedule Meetings → Track Progress
+These scripts are intended for local development/testing.
 
 ---
 
 ## 📊 Database
 
-**13 tables:** users, hackathons, teams, team_members, submissions, evaluations, mentor_team_assignments, scheduled_meetings, team_mentor_communications, notifications, announcements, activity_logs
+The application uses a relational MySQL database containing tables for:
 
-📄 Full schema: [DATABASE.md](DATABASE.md)
+- Users
+- Hackathons
+- Teams
+- Team Members
+- Submissions
+- Evaluations
+- Mentor-Team Assignments
+- Scheduled Meetings
+- Team-Mentor Communications
+- Notifications
+- Announcements
+- Activity Logs
+
+Database documentation:
+
+**[DATABASE.md](DATABASE.md)**
 
 ---
 
-## 🔌 Real-Time Features
+## 🔌 Real-Time Communication
 
-**Socket.io WebSocket:** Instant messaging • Emoji reactions • Message edit/delete
+The application uses **Socket.io** for real-time communication between mentors and teams.
 
-**Architecture:** Room-based (`team_{id}_mentor_{id}`) • Event-driven • CORS-protected
+### Features
 
-📄 Implementation: [SOCKET_IO_IMPLEMENTATION.md](SOCKET_IO_IMPLEMENTATION.md)
+- Instant messaging
+- Emoji reactions
+- Message editing
+- Message deletion
+- File attachments
+- Room-based communication
+- CORS-protected connections
+
+Communication rooms follow the structure:
+
+```text
+team_{id}_mentor_{id}
+```
+
+Detailed implementation:
+
+**[SOCKET_IO_IMPLEMENTATION.md](SOCKET_IO_IMPLEMENTATION.md)**
 
 ---
 
-## 🐛 Troubleshooting
+## 🔄 Application Workflow
 
-| Issue | Solution |
-|-------|----------|
-| **Database error** | Check XAMPP MySQL running • Verify database `hackathon` |
-| **Port in use** | `netstat -ano \| findstr :5000` then `taskkill /PID <PID> /F` or change PORT in `.env` |
-| **Socket.io fails** | Ensure backend running • Check CORS • Clear browser cache |
-| **Upload issues** | Verify `uploads/` folder • Check permissions |
-| **npm errors** | Update Node.js • `npm cache clean --force` • Delete `node_modules` & reinstall |
+### Admin
+
+```text
+Login
+  ↓
+Create Hackathon
+  ↓
+Configure Dates & Prizes
+  ↓
+Manage Mentors
+  ↓
+Assign Mentors
+  ↓
+Monitor Teams & Submissions
+  ↓
+Manage Evaluations
+  ↓
+Finalize Leaderboard
+```
+
+### Mentor
+
+```text
+Login
+  ↓
+View Assigned Teams
+  ↓
+Track Progress
+  ↓
+Chat With Teams
+  ↓
+Schedule Meetings
+  ↓
+Provide Support
+```
+
+### Team
+
+```text
+Register / Login
+  ↓
+Browse Hackathons
+  ↓
+Register
+  ↓
+Create / Join Team
+  ↓
+Work on Project
+  ↓
+Submit Project
+  ↓
+Communicate With Mentor
+  ↓
+Track Submission
+  ↓
+View Leaderboard
+```
+
+---
+
+## 📁 Project Structure
+
+```text
+Hackathon-Management-System/
+│
+├── BACKEND/
+│   ├── config/
+│   ├── controllers/
+│   ├── middleware/
+│   ├── models/
+│   ├── routes/
+│   ├── uploads/
+│   ├── server.js
+│   ├── create-admin.js
+│   ├── create-10-test-users.js
+│   ├── create-9-hackathons.js
+│   └── package.json
+│
+├── FRONTEND/
+│   ├── public/
+│   ├── src/
+│   │   ├── components/
+│   │   ├── pages/
+│   │   ├── contexts/
+│   │   ├── lib/
+│   │   └── main.tsx
+│   └── package.json
+│
+├── database/
+│   ├── hackathon_schema.sql
+│   ├── mentor_tables.sql
+│   ├── add_leaderboard_final.sql
+│   ├── add_project_zip_column.sql
+│   └── add_message_delete.sql
+│
+├── DATABASE.md
+├── PROJECT_SETUP_GUIDE.md
+├── QUICK_START_GUIDE.md
+├── SOCKET_IO_IMPLEMENTATION.md
+└── README.md
+```
 
 ---
 
 ## 📚 Documentation
 
-- [DATABASE.md](DATABASE.md) - Complete schema
-- [PROJECT_SETUP_GUIDE.md](PROJECT_SETUP_GUIDE.md) - Detailed setup
-- [SOCKET_IO_IMPLEMENTATION.md](SOCKET_IO_IMPLEMENTATION.md) - Real-time features
+| Document | Description |
+|---|---|
+| [QUICK_START_GUIDE.md](QUICK_START_GUIDE.md) | Get the project running quickly |
+| [PROJECT_SETUP_GUIDE.md](PROJECT_SETUP_GUIDE.md) | Detailed setup and troubleshooting |
+| [DATABASE.md](DATABASE.md) | Database schema and structure |
+| [SOCKET_IO_IMPLEMENTATION.md](SOCKET_IO_IMPLEMENTATION.md) | Real-time communication implementation |
+
+---
+
+## 🐛 Troubleshooting
+
+### Database Error
+
+- Make sure MySQL is running.
+- Verify that the `hackathon` database exists.
+- Check the database credentials in `BACKEND/.env`.
+
+### Backend Error
+
+```bash
+cd BACKEND
+npm install
+npm run dev
+```
+
+### Frontend Error
+
+```bash
+cd FRONTEND
+npm install
+npm run dev
+```
+
+### Port Already in Use
+
+Windows:
+
+```bash
+netstat -ano | findstr :5000
+```
+
+or:
+
+```bash
+netstat -ano | findstr :5173
+```
 
 ---
 
 ## 🤝 Contributing
 
-1. Fork repository
-2. Create branch: `git checkout -b feature/NewFeature`
-3. Commit: `git commit -m 'Add NewFeature'`
-4. Push: `git push origin feature/NewFeature`
-5. Open Pull Request
+1. Fork the repository.
+2. Create a feature branch:
+
+```bash
+git checkout -b feature/NewFeature
+```
+
+3. Make your changes.
+4. Commit:
+
+```bash
+git add .
+git commit -m "Add NewFeature"
+```
+
+5. Push:
+
+```bash
+git push origin feature/NewFeature
+```
+
+6. Open a Pull Request.
 
 ---
 
 ## 👨‍💻 Author
 
-**Abhimanyu** - [@abhim-5](https://github.com/abhim-5)
+### Aayush Hudda
+
+📧 **Email:** aayush154837@gmail.com
+
+🔗 **GitHub:** https://github.com/Aayush1554
+
+🔗 **LinkedIn:** https://www.linkedin.com/in/aayush-hudda-714591328/
 
 ---
 
 <div align="center">
 
-**⭐ Star this repo if you find it helpful!**
+### ⭐ If you find this project useful, consider giving it a star!
 
-[Report Bug](https://github.com/abhim-5/Hackathon-Management-System/issues) • [Request Feature](https://github.com/abhim-5/Hackathon-Management-System/issues)
+**Hackathon Management System**
+
+Built with React • Node.js • Express • MySQL • Socket.io
 
 </div>

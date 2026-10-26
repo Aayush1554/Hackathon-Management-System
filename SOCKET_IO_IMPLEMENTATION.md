@@ -1,164 +1,658 @@
-# Real-Time Communication with Socket.io - Implementation Summary
+# 🔌 Real-Time Communication with Socket.io
 
-## ✅ Changes Made
+## Overview
 
-### Backend (Node.js/Express)
+The Hackathon Management System uses **Socket.io** to provide real-time communication between teams and their assigned mentors.
 
-1. **server.js**
-   - Installed `socket.io` package
-   - Created HTTP server wrapper for Express
-   - Integrated Socket.io with CORS configuration
-   - Added Socket.io connection handling with room-based communication
-   - Rooms are named: `team_{teamId}_mentor_{mentorId}`
-   - Added `join_communication` and `leave_communication` events
+Instead of requiring users to manually refresh the chat, Socket.io allows message, reaction, and deletion events to be communicated between connected clients in real time.
 
-2. **Controllers (team.controller.js & mentor.controller.js)**
-   - Updated `sendCommunication` functions to emit `new_message` event
-   - Updated `addReaction` functions to emit `message_reaction` event
-   - Updated `deleteMessageForMe` functions to emit `message_deleted_for_me` event
-   - Updated `deleteMessageForEveryone` functions to emit `message_deleted_for_everyone` event
-   - All events are broadcast to the specific room (team-mentor pair)
+The implementation uses a **room-based communication architecture**, where each team-mentor conversation has its own Socket.io room.
 
-3. **Models (Team.model.js & Mentor.model.js)**
-   - Updated `addReaction()` to return `{ reactions, team_id, mentor_id }`
-   - Updated `deleteMessageForMe()` to return `{ success, team_id, mentor_id }`
-   - Updated `deleteMessageForEveryone()` to return `{ success, team_id, mentor_id }`
-   - This allows controllers to identify which room to emit events to
+---
 
-### Frontend (React/TypeScript)
+# 🏗️ Architecture
 
-1. **ChatInterface.tsx**
-   - Installed `socket.io-client` package
-   - Added Socket import: `import { io, Socket } from "socket.io-client"`
-   - Added `teamId` and `mentorId` props to interface
-   - Added `socketRef` useRef to store Socket.io connection
-   - Created Socket.io connection useEffect that:
-     * Connects to backend WebSocket server
-     * Joins the appropriate room using teamId & mentorId
-     * Listens for 4 real-time events:
-       - `new_message`: When anyone sends a message
-       - `message_reaction`: When anyone adds/removes a reaction
-       - `message_deleted_for_me`: When a message is deleted (local)
-       - `message_deleted_for_everyone`: When a message is deleted globally
-     * Calls `onRefresh()` to update the UI when events are received
-     * Cleans up connection on component unmount
+```text
+┌──────────────────┐                 ┌──────────────────┐
+│   Team Client    │                 │  Mentor Client   │
+│  React + Socket  │                 │  React + Socket  │
+└────────┬─────────┘                 └────────┬─────────┘
+         │                                    │
+         │          Socket.io Connection      │
+         └────────────────┬───────────────────┘
+                          │
+                  ┌───────▼────────┐
+                  │ Node.js Server │
+                  │    Express     │
+                  │   + Socket.io  │
+                  └───────┬────────┘
+                          │
+                    ┌─────▼─────┐
+                    │   MySQL   │
+                    │  Database │
+                    └───────────┘
+```
 
-2. **MentorContentModal.tsx**
-   - Passed `teamId={teamId}` and `mentorId={mentor.user_id}` to ChatInterface
+---
 
-3. **MentorDashboard.tsx**
-   - Passed `teamId={selectedTeam?.team_id}` and `mentorId={user?.user_id}` to ChatInterface
+# 🔧 Backend Implementation
 
-## 🔄 How It Works
+## 1. Socket.io Server
 
-### Message Flow (Real-Time)
+The backend creates an HTTP server around the Express application and attaches Socket.io to it.
 
-1. **User A sends a message:**
-   ```
-   Frontend (A) → API POST /api/.../communications → Backend Controller
-   → Database (save message)
-   → Socket.io emit('new_message') to room
-   → All clients in room receive event
-   → Frontend (B) receives event → calls onRefresh() → updates UI
-   ```
+### `server.js`
 
-2. **User A adds a reaction:**
-   ```
-   Frontend (A) → API POST /api/.../react → Backend Controller
-   → Database (update reactions)
-   → Socket.io emit('message_reaction') to room
-   → All clients in room receive event
-   → Frontend (B) receives event → calls onRefresh() → updates UI
-   ```
+The Socket.io server:
 
-3. **User A deletes a message:**
-   ```
-   Frontend (A) → API DELETE /api/.../delete → Backend Controller
-   → Database (update delete flags)
-   → Socket.io emit('message_deleted_for_everyone') to room
-   → All clients in room receive event
-   → Frontend (B) receives event → calls onRefresh() → updates UI
-   ```
+- Runs on the same port as the Express backend.
+- Uses CORS configuration for the frontend.
+- Handles client connections.
+- Allows clients to join and leave communication rooms.
+- Broadcasts communication events to the appropriate room.
 
-### Room-Based Architecture
+The default backend port is:
 
-- Each team-mentor communication pair has a unique room: `team_3_mentor_5`
-- When a user opens the chat, they join the room
-- All Socket.io events are emitted to that specific room only
-- When a user closes the chat, they leave the room
-- This ensures privacy and prevents cross-chat message leaks
+```text
+5000
+```
 
-## 🚀 Testing Instructions
+---
 
-1. **Start the backend server:**
-   ```bash
-   cd BACKEND
-   node server.js
-   ```
-   You should see: `🔌 WebSocket ready for real-time communication`
+## 2. Room-Based Communication
 
-2. **Start the frontend:**
-   ```bash
-   cd FRONTEND
-   npm run dev
-   ```
+Each team-mentor conversation receives a unique room.
 
-3. **Test real-time updates:**
-   - Open two browser windows (or use incognito for second window)
-   - Window 1: Login as a team member
-   - Window 2: Login as their assigned mentor
-   - Open the chat interface in both windows
-   - Send a message from Window 1
-   - **Expected:** Window 2 should receive the message **instantly** (no refresh needed)
-   - Add a reaction from Window 2
-   - **Expected:** Window 1 should see the reaction **instantly**
-   - Delete a message from Window 1
-   - **Expected:** Window 2 should see it deleted **instantly**
+The room format is:
 
-## 📊 Benefits
+```text
+team_{teamId}_mentor_{mentorId}
+```
 
-✅ **Instant updates** - No need to manually refresh
-✅ **Better UX** - Real-time chat experience like WhatsApp/Slack
-✅ **Reduced server load** - No constant polling (only fallback)
-✅ **Bidirectional** - Both team and mentor see updates instantly
-✅ **Scalable** - Room-based architecture handles multiple conversations
-✅ **Fallback support** - Still has polling in case WebSocket fails
+For example:
 
-## 🔧 Configuration
+```text
+team_3_mentor_5
+```
 
-### Backend
-- WebSocket runs on the same port as Express (default: 5000)
-- CORS configured to allow frontend URL
-- Transports: WebSocket (primary), Polling (fallback)
+This means:
 
-### Frontend
-- Socket.io connects to: `process.env.VITE_API_URL || 'http://localhost:5000'`
-- Auto-reconnection enabled
-- Polling interval: 3 seconds (fallback)
+```text
+Team ID: 3
+Mentor ID: 5
+```
 
-## 🐛 Troubleshooting
+Only users connected to that team-mentor room receive events for that conversation.
 
-**Issue:** Messages not appearing in real-time
-- Check browser console for Socket.io connection logs
-- Verify backend shows "User connected" when chat opens
-- Confirm room name matches between frontend and backend
+### Why use rooms?
 
-**Issue:** "CORS error" in browser console
-- Verify `FRONTEND_URL` in backend .env file
-- Check Socket.io CORS configuration in server.js
+Room-based communication:
 
-**Issue:** Socket.io not connecting
-- Ensure backend server is running
-- Check `VITE_API_URL` in frontend .env file
-- Try clearing browser cache
+- Separates different conversations.
+- Prevents messages from being broadcast to unrelated users.
+- Allows multiple team-mentor conversations to operate simultaneously.
+- Provides a scalable structure for real-time communication.
 
-## 📝 Database Column Changes
+---
 
-✅ Renamed `message_id` → `communication_id` (primary key)
-✅ Renamed `reply_to_message_id` → `reply_to_communication_id`
-✅ All foreign keys re-added with correct references
+# 🔄 Socket Events
 
-## 🎉 Result
+The application currently handles four main real-time events.
 
-**Before:** User had to manually refresh to see new messages/reactions/deletes
-**After:** All changes appear **instantly** without any refresh - true real-time experience!
+| Event | Purpose |
+|---|---|
+| `new_message` | Notifies clients when a new message is sent |
+| `message_reaction` | Notifies clients when a reaction is added or removed |
+| `message_deleted_for_me` | Notifies clients about a message deleted locally |
+| `message_deleted_for_everyone` | Notifies clients when a message is deleted for everyone |
+
+---
+
+# 📨 Message Flow
+
+## Sending a Message
+
+When a user sends a message:
+
+```text
+React Client
+     │
+     │ POST request
+     ▼
+Backend Controller
+     │
+     │ Save message
+     ▼
+MySQL Database
+     │
+     │ Message saved
+     ▼
+Socket.io Server
+     │
+     │ emit("new_message")
+     ▼
+Team-Mentor Room
+     │
+     ├──────────────► Team Client
+     │
+     └──────────────► Mentor Client
+```
+
+The receiving client gets the Socket.io event and refreshes the chat data so the new message appears without manually refreshing the browser.
+
+---
+
+# 👍 Reaction Flow
+
+When a user adds or removes a reaction:
+
+```text
+Frontend
+    │
+    │ POST reaction request
+    ▼
+Backend Controller
+    │
+    │ Update database
+    ▼
+MySQL
+    │
+    │ Updated reactions
+    ▼
+Socket.io
+    │
+    │ emit("message_reaction")
+    ▼
+Team-Mentor Room
+    │
+    ├──────────────► Team
+    │
+    └──────────────► Mentor
+```
+
+The other connected client receives the event and updates its chat interface.
+
+---
+
+# 🗑️ Message Deletion Flow
+
+When a user deletes a message:
+
+```text
+Frontend
+    │
+    │ DELETE request
+    ▼
+Backend Controller
+    │
+    │ Update database
+    ▼
+MySQL
+    │
+    │ Updated message state
+    ▼
+Socket.io
+    │
+    │ emit(...)
+    ▼
+Team-Mentor Room
+    │
+    ├──────────────► Team
+    │
+    └──────────────► Mentor
+```
+
+Depending on the deletion type, the appropriate event is emitted:
+
+```text
+message_deleted_for_me
+```
+
+or:
+
+```text
+message_deleted_for_everyone
+```
+
+---
+
+# 🎨 Frontend Implementation
+
+## `ChatInterface.tsx`
+
+The chat interface manages the Socket.io connection.
+
+It:
+
+- Imports `io` and `Socket` from `socket.io-client`.
+- Receives `teamId` and `mentorId`.
+- Stores the Socket.io connection using `useRef`.
+- Establishes a connection when the chat is opened.
+- Joins the appropriate team-mentor room.
+- Listens for real-time events.
+- Refreshes the chat when an event is received.
+- Disconnects and cleans up the socket when the component unmounts.
+
+The Socket.io client connects using:
+
+```text
+VITE_API_URL
+```
+
+or, if it is not configured:
+
+```text
+http://localhost:5000
+```
+
+---
+
+# 🧩 Component Integration
+
+## `MentorContentModal.tsx`
+
+The mentor content modal passes the appropriate identifiers to the chat interface:
+
+```text
+teamId
+mentorId
+```
+
+This allows the chat to join the correct communication room.
+
+---
+
+## `MentorDashboard.tsx`
+
+The mentor dashboard passes:
+
+```text
+teamId={selectedTeam?.team_id}
+mentorId={user?.user_id}
+```
+
+to `ChatInterface`.
+
+This ensures that the mentor connects to the room corresponding to the currently selected team.
+
+---
+
+# 🔐 Communication Isolation
+
+The room-based architecture prevents unrelated conversations from receiving each other's Socket.io events.
+
+For example:
+
+```text
+team_1_mentor_2
+```
+
+and:
+
+```text
+team_3_mentor_5
+```
+
+are completely separate rooms.
+
+An event emitted to:
+
+```text
+team_1_mentor_2
+```
+
+is not broadcast to:
+
+```text
+team_3_mentor_5
+```
+
+This provides communication isolation between different team-mentor conversations.
+
+> Authentication and authorization are handled separately by the application's existing authentication system and API middleware. Socket.io rooms provide event routing and communication isolation.
+
+---
+
+# 🧪 Testing Real-Time Communication
+
+## 1. Start the Backend
+
+Open a terminal:
+
+```bash
+cd BACKEND
+npm run dev
+```
+
+The backend should start on:
+
+```text
+http://localhost:5000
+```
+
+---
+
+## 2. Start the Frontend
+
+Open another terminal:
+
+```bash
+cd FRONTEND
+npm run dev
+```
+
+The frontend should start on:
+
+```text
+http://localhost:5173
+```
+
+---
+
+## 3. Open Two Clients
+
+Use two browser windows, or use an incognito window for the second client.
+
+### Window 1
+
+Login as a team member.
+
+### Window 2
+
+Login as the mentor assigned to that team.
+
+Open the same team-mentor chat in both windows.
+
+---
+
+## 4. Test Messaging
+
+Send a message from the team account.
+
+Expected result:
+
+```text
+Team
+  ↓
+Backend
+  ↓
+Database
+  ↓
+Socket.io
+  ↓
+Mentor
+```
+
+The mentor should receive the update without manually refreshing the page.
+
+---
+
+## 5. Test Reactions
+
+Add a reaction to a message.
+
+Expected result:
+
+```text
+Reaction added
+      ↓
+Database updated
+      ↓
+Socket.io event
+      ↓
+Other client receives update
+```
+
+The reaction should appear on the other client without a manual page refresh.
+
+---
+
+## 6. Test Message Deletion
+
+Delete a message using the available deletion functionality.
+
+Expected result:
+
+```text
+Message deletion
+      ↓
+Database updated
+      ↓
+Socket.io event
+      ↓
+Other client receives update
+```
+
+The other client should reflect the deletion automatically.
+
+---
+
+# ⚙️ Configuration
+
+## Backend
+
+Socket.io runs alongside the Express server.
+
+Default configuration:
+
+```text
+Backend Port: 5000
+```
+
+The backend Socket.io configuration includes:
+
+- CORS support
+- Connection handling
+- Room management
+- Event broadcasting
+- WebSocket transport with Socket.io fallback support
+
+---
+
+## Frontend
+
+The Socket.io client uses:
+
+```text
+VITE_API_URL
+```
+
+when configured.
+
+Otherwise it defaults to:
+
+```text
+http://localhost:5000
+```
+
+The client also supports automatic reconnection.
+
+---
+
+# 🔄 Polling Fallback
+
+The chat application also has a periodic refresh mechanism.
+
+The polling interval is:
+
+```text
+3 seconds
+```
+
+Socket.io is responsible for the real-time experience, while the existing refresh mechanism provides a fallback if a Socket.io connection is unavailable or temporarily interrupted.
+
+Therefore:
+
+```text
+Primary:
+Socket.io → Real-time updates
+
+Fallback:
+Periodic API refresh → Synchronization
+```
+
+---
+
+# 🐛 Troubleshooting
+
+## Messages Are Not Updating in Real Time
+
+Check:
+
+1. Backend server is running.
+2. Frontend is connected to the correct backend URL.
+3. Browser console for Socket.io errors.
+4. Backend terminal for connection messages.
+5. Team ID and mentor ID are correct.
+6. Both users are opening the same team-mentor conversation.
+
+---
+
+## CORS Error
+
+Check the backend `.env`:
+
+```env
+FRONTEND_URL=http://localhost:5173
+```
+
+Make sure it matches the URL where the frontend is running.
+
+Restart the backend after changing `.env`.
+
+---
+
+## Socket.io Is Not Connecting
+
+Check:
+
+```text
+Backend:
+http://localhost:5000
+
+Frontend:
+http://localhost:5173
+```
+
+If using a frontend `.env`, verify:
+
+```env
+VITE_API_URL=http://localhost:5000
+```
+
+Then restart the Vite development server.
+
+---
+
+## Room Events Are Not Received
+
+Verify that the room identifier is consistent:
+
+```text
+team_{teamId}_mentor_{mentorId}
+```
+
+The same team-mentor pair must generate the same room name on both sides.
+
+---
+
+# 🗄️ Database Changes
+
+The communication system uses the following identifier changes:
+
+```text
+message_id
+     ↓
+communication_id
+```
+
+`communication_id` is used as the primary key for communication records.
+
+The reply reference was also changed:
+
+```text
+reply_to_message_id
+     ↓
+reply_to_communication_id
+```
+
+Foreign key relationships were updated accordingly.
+
+---
+
+# 📁 Related Files
+
+Important Socket.io-related files include:
+
+```text
+BACKEND/
+├── server.js
+├── controllers/
+│   ├── team.controller.js
+│   └── mentor.controller.js
+└── models/
+    ├── Team.model.js
+    └── Mentor.model.js
+
+FRONTEND/
+└── src/
+    └── components/
+        └── ChatInterface.tsx
+```
+
+Additional frontend components involved in the integration:
+
+```text
+MentorContentModal.tsx
+MentorDashboard.tsx
+```
+
+---
+
+# 🎯 Result
+
+### Before Socket.io
+
+```text
+User sends message
+       ↓
+Database updated
+       ↓
+Other user does not immediately see it
+       ↓
+Refresh / polling required
+```
+
+### With Socket.io
+
+```text
+User sends message
+       ↓
+Database updated
+       ↓
+Socket.io event emitted
+       ↓
+Team-Mentor room
+       ↓
+Other client receives event
+       ↓
+Chat updates automatically
+```
+
+This provides a smoother real-time communication experience between hackathon teams and their assigned mentors.
+
+---
+
+## 🚀 Summary
+
+The Socket.io implementation provides:
+
+- ✅ Real-time messaging
+- ✅ Real-time reactions
+- ✅ Real-time message deletion updates
+- ✅ Team-mentor room isolation
+- ✅ Automatic reconnection
+- ✅ WebSocket-based communication
+- ✅ Polling fallback
+- ✅ Support for multiple simultaneous conversations
+- ✅ Integration with the existing React + Node.js architecture
